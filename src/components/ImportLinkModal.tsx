@@ -37,8 +37,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
   const [listType, setListType] = useState<PlaceType>('restaurant');
   const [listRating, setListRating] = useState(4);
 
-  // Captcha state
-  const [captchaUrl, setCaptchaUrl] = useState('');
+
 
 
 
@@ -76,7 +75,6 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
             return;
           } catch (err) {
             if (err instanceof CaptchaError) {
-              setCaptchaUrl(err.originalUrl);
               setStep('captcha');
               return;
             }
@@ -130,7 +128,6 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
         setStep('error');
       } catch (err) {
         if (err instanceof CaptchaError) {
-          setCaptchaUrl(err.originalUrl);
           setStep('captcha');
           return;
         }
@@ -309,7 +306,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
             </p>
             <div className="form-actions">
               <button className="btn-secondary" onClick={onClose}>Cancel</button>
-              <button className="btn-primary" onClick={() => { setStep('paste'); setCaptchaUrl(''); }}>
+              <button className="btn-primary" onClick={() => setStep('paste')}>
                 Retry
               </button>
             </div>
