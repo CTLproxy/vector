@@ -362,6 +362,19 @@ button:active {
   color: var(--orange);
 }
 
+.place-rating.interactive {
+  cursor: pointer;
+}
+
+.card-star {
+  color: var(--text-dim);
+  transition: color 0.1s;
+}
+
+.card-star.filled {
+  color: var(--orange);
+}
+
 .place-tags {
   display: flex;
   flex-wrap: wrap;

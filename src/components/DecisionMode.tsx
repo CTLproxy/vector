@@ -2,6 +2,16 @@ import { useState, useRef, useCallback } from 'react';
 import { ScoredPlace } from '../lib/scoring';
 import { useStore } from '../store';
 
+function RatingBadge({ rating }: { rating: number }) {
+  const favMode = useStore((s) => s.favMode);
+  if (favMode) return <p className="decision-rating">{rating >= 5 ? '❤️' : '♡'}</p>;
+  return (
+    <p className="decision-rating">
+      {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
+    </p>
+  );
+}
+
 interface Props {
   candidates: ScoredPlace[];
   onClose: () => void;
@@ -56,10 +66,7 @@ export default function DecisionMode({ candidates, onClose }: Props) {
           <h2>Let's go!</h2>
           <h3>{accepted.place.name}</h3>
           <p className={`place-type type-${accepted.place.type}`}>{accepted.place.type}</p>
-          <p className="place-rating">
-            {'★'.repeat(accepted.place.rating)}
-            {'☆'.repeat(5 - accepted.place.rating)}
-          </p>
+          <RatingBadge rating={accepted.place.rating} />
           {userPosition && (
             <p className="place-distance">{accepted.distance.toFixed(1)} km away</p>
           )}
@@ -104,10 +111,7 @@ export default function DecisionMode({ candidates, onClose }: Props) {
       >
         <h2>{current.place.name}</h2>
         <p className={`place-type type-${current.place.type}`}>{current.place.type}</p>
-        <p className="decision-rating">
-          {'★'.repeat(current.place.rating)}
-          {'☆'.repeat(5 - current.place.rating)}
-        </p>
+        <RatingBadge rating={current.place.rating} />
         {userPosition && (
           <p className="decision-distance">{current.distance.toFixed(1)} km</p>
         )}
