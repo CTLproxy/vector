@@ -143,7 +143,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
           }
         }
 
-        // Strategy 2: Extract a full Maps URL from the returned HTML
+        // Strategy: Extract a full Maps URL from the returned HTML
         const resolvedUrl = extractMapUrlFromHtml(html);
         if (resolvedUrl) {
           const result = parseMapLink(resolvedUrl);
@@ -157,13 +157,29 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
           }
         }
 
-        // Strategy 3: Extract coordinates directly from HTML/JS data
+        // Strategy: Geocode using the place query from the redirect chain
+        // (Google Maps short links redirect through ?q=Place+Name URLs)
+        const placeQuery = extractQueryFromChain(redirectChain);
+        if (placeQuery) {
+          const geocoded = await geocodeQuery(placeQuery);
+          if (geocoded) {
+            const placeName = extractNameFromHtml(html) || placeQuery.split(',')[0].trim();
+            const result: ParsedPlace = { name: placeName, ...geocoded, sourceUrl: input };
+            setParsed(result);
+            setName(result.name);
+            setStep('confirm');
+            return;
+          }
+        }
+
+        // Last resort: Extract coordinates directly from HTML/JS data
+        // (may be inaccurate when fetched from a server in another region)
         const coords = extractCoordsFromHtml(html);
         if (coords) {
-          const name = extractNameFromHtml(html);
-          const result: ParsedPlace = { name, ...coords, sourceUrl: input };
+          const coordName = extractNameFromHtml(html);
+          const result: ParsedPlace = { name: coordName, ...coords, sourceUrl: input };
           setParsed(result);
-          setName(name);
+          setName(coordName);
           setStep('confirm');
           return;
         }
