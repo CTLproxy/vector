@@ -2,14 +2,22 @@ import { useState } from 'react';
 import { useStore } from '../store';
 import { downloadJson, importFromFile } from '../lib/storage';
 import { pickSyncFile, loadFromSyncFile, saveToSyncFile, hasSyncFile } from '../lib/sync';
+import { getCorsProxy, setCorsProxy } from '../lib/cors-proxy';
 
-export default function SettingsPanel({ onClose }: { onClose: () => void }) {
+interface Props {
+  onClose: () => void;
+  onOpenSavedLists: () => void;
+}
+
+export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const places = useStore((s) => s.places);
+  const savedLists = useStore((s) => s.savedLists);
   const setPlaces = useStore((s) => s.setPlaces);
   const [syncStatus, setSyncStatus] = useState('');
+  const [proxyUrl, setProxyUrl] = useState(getCorsProxy);
 
   const handleExport = () => {
-    downloadJson(places);
+    downloadJson(places, savedLists);
   };
 
   const handleImport = async () => {
@@ -40,10 +48,29 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
     setSyncStatus(ok ? 'Saved to sync file.' : 'Failed to save.');
   };
 
+  const handleProxyChange = (value: string) => {
+    setProxyUrl(value);
+    setCorsProxy(value);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
         <h3>Settings</h3>
+
+        <section>
+          <h4>Saved Lists</h4>
+          <p className="settings-hint">
+            Manage Google Maps saved lists imported via share links.
+          </p>
+          <div className="settings-row">
+            <button className="btn-secondary" onClick={onOpenSavedLists}>
+              {savedLists.length > 0
+                ? `Manage ${savedLists.length} List${savedLists.length !== 1 ? 's' : ''}`
+                : 'No Lists Yet'}
+            </button>
+          </div>
+        </section>
 
         <section>
           <h4>Import / Export</h4>
@@ -78,6 +105,19 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {syncStatus && <p className="sync-status">{syncStatus}</p>}
+        </section>
+
+        <section>
+          <h4>CORS Proxy</h4>
+          <p className="settings-hint">
+            Used to resolve short share URLs. Leave empty to use the default proxy.
+          </p>
+          <input
+            type="text"
+            value={proxyUrl}
+            onChange={(e) => handleProxyChange(e.target.value)}
+            placeholder="https://api.codetabs.com/v1/proxy?quest="
+          />
         </section>
 
         <section>

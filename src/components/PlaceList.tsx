@@ -10,8 +10,10 @@ function PlaceCard({ scored }: { scored: ScoredPlace }) {
   const { place, distance } = scored;
   const setSelectedPlaceId = useStore((s) => s.setSelectedPlaceId);
   const userPosition = useStore((s) => s.userPosition);
+  const savedLists = useStore((s) => s.savedLists);
 
-  const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`;
+  const navUrl = place.sourceUrl || `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`;
+  const sourceList = place.sourceListId ? savedLists.find((l) => l.id === place.sourceListId) : null;
 
   return (
     <div className="place-card" onClick={() => setSelectedPlaceId(place.id)}>
@@ -29,6 +31,7 @@ function PlaceCard({ scored }: { scored: ScoredPlace }) {
             {place.tags.map((t) => (
               <span key={t} className="tag">{t}</span>
             ))}
+            {sourceList && <span className="tag list-tag">📋 {sourceList.name}</span>}
           </div>
         )}
       </div>

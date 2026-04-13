@@ -6,8 +6,9 @@ import {
   GeoPosition,
   SortMode,
   FilterState,
+  SavedList,
 } from '../types';
-import { loadPlaces, savePlaces } from '../lib/storage';
+import { loadPlaces, savePlaces, loadSavedLists, saveSavedLists } from '../lib/storage';
 
 interface AppState {
   // Places
@@ -16,6 +17,15 @@ interface AppState {
   updatePlace: (id: string, p: Partial<Omit<Place, 'id' | 'createdAt'>>) => void;
   deletePlace: (id: string) => void;
   setPlaces: (places: Place[]) => void;
+  addPlaces: (places: Omit<Place, 'id' | 'createdAt' | 'updatedAt'>[]) => void;
+  removePlaces: (ids: string[]) => void;
+  detachPlacesFromList: (ids: string[]) => void;
+
+  // Saved Lists
+  savedLists: SavedList[];
+  addSavedList: (list: Omit<SavedList, 'id'>) => SavedList;
+  updateSavedList: (id: string, partial: Partial<Omit<SavedList, 'id'>>) => void;
+  deleteSavedList: (id: string) => void;
 
   // Location
   userPosition: GeoPosition | null;
@@ -67,6 +77,60 @@ export const useStore = create<AppState>((set, get) => ({
   setPlaces: (places) => {
     savePlaces(places);
     set({ places });
+  },
+
+  addPlaces: (newPlaces) => {
+    const now = Date.now();
+    const created: Place[] = newPlaces.map((p) => ({
+      ...p,
+      id: uuid(),
+      createdAt: now,
+      updatedAt: now,
+    }));
+    const next = [...get().places, ...created];
+    savePlaces(next);
+    set({ places: next });
+  },
+
+  removePlaces: (ids) => {
+    const idSet = new Set(ids);
+    const next = get().places.filter((p) => !idSet.has(p.id));
+    savePlaces(next);
+    set({ places: next });
+  },
+
+  detachPlacesFromList: (ids) => {
+    const idSet = new Set(ids);
+    const next = get().places.map((p) =>
+      idSet.has(p.id) ? { ...p, sourceListId: undefined, updatedAt: Date.now() } : p,
+    );
+    savePlaces(next);
+    set({ places: next });
+  },
+
+  // Saved Lists
+  savedLists: loadSavedLists(),
+
+  addSavedList: (list) => {
+    const saved: SavedList = { ...list, id: uuid() };
+    const next = [...get().savedLists, saved];
+    saveSavedLists(next);
+    set({ savedLists: next });
+    return saved;
+  },
+
+  updateSavedList: (id, partial) => {
+    const next = get().savedLists.map((l) =>
+      l.id === id ? { ...l, ...partial } : l,
+    );
+    saveSavedLists(next);
+    set({ savedLists: next });
+  },
+
+  deleteSavedList: (id) => {
+    const next = get().savedLists.filter((l) => l.id !== id);
+    saveSavedLists(next);
+    set({ savedLists: next });
   },
 
   userPosition: null,

@@ -11,11 +11,25 @@ export interface Place {
   notes: string;
   createdAt: number;
   updatedAt: number;
+  /** Original Google/Apple Maps URL this place was imported from */
+  sourceUrl?: string;
+  /** ID of the SavedList this place was imported from (if any) */
+  sourceListId?: string;
+}
+
+/** A tracked Google Maps saved list that can be re-synced */
+export interface SavedList {
+  id: string;
+  name: string;
+  url: string;
+  lastSyncedAt: number;
+  placeCount: number;
 }
 
 export interface PlacesFile {
   version: number;
   places: Place[];
+  savedLists?: SavedList[];
   exportedAt: number;
 }
 

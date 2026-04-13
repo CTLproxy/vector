@@ -5,6 +5,7 @@ import { useStore } from '../store';
 export default function PlaceDetail() {
   const selectedPlaceId = useStore((s) => s.selectedPlaceId);
   const places = useStore((s) => s.places);
+  const savedLists = useStore((s) => s.savedLists);
   const updatePlace = useStore((s) => s.updatePlace);
   const deletePlace = useStore((s) => s.deletePlace);
   const setSelectedPlaceId = useStore((s) => s.setSelectedPlaceId);
@@ -91,6 +92,15 @@ export default function PlaceDetail() {
               </div>
             )}
             {place.notes && <p className="place-notes">{place.notes}</p>}
+            {place.sourceUrl && (
+              <a className="source-link" href={place.sourceUrl} target="_blank" rel="noopener noreferrer">
+                View on Maps ↗
+              </a>
+            )}
+            {place.sourceListId && (() => {
+              const list = savedLists.find((l) => l.id === place.sourceListId);
+              return list ? <p className="source-list-badge">📋 {list.name}</p> : null;
+            })()}
             <div className="form-actions">
               <button className="btn-danger" onClick={handleDelete}>Delete</button>
               <button className="btn-secondary" onClick={startEdit}>Edit</button>

@@ -1,6 +1,7 @@
-import { Place, PlacesFile } from '../types';
+import { Place, PlacesFile, SavedList } from '../types';
 
 const STORAGE_KEY = 'vector_places';
+const LISTS_KEY = 'vector_saved_lists';
 
 export function loadPlaces(): Place[] {
   try {
@@ -17,10 +18,26 @@ export function savePlaces(places: Place[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(places));
 }
 
-export function exportToJson(places: Place[]): string {
+export function loadSavedLists(): SavedList[] {
+  try {
+    const raw = localStorage.getItem(LISTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveSavedLists(lists: SavedList[]): void {
+  localStorage.setItem(LISTS_KEY, JSON.stringify(lists));
+}
+
+export function exportToJson(places: Place[], savedLists?: SavedList[]): string {
   const file: PlacesFile = {
     version: 1,
     places,
+    savedLists,
     exportedAt: Date.now(),
   };
   return JSON.stringify(file, null, 2);
@@ -38,8 +55,8 @@ export function parseImportFile(json: string): Place[] | null {
   }
 }
 
-export function downloadJson(places: Place[], filename = 'travel_places.json'): void {
-  const blob = new Blob([exportToJson(places)], { type: 'application/json' });
+export function downloadJson(places: Place[], savedLists?: SavedList[], filename = 'travel_places.json'): void {
+  const blob = new Blob([exportToJson(places, savedLists)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
