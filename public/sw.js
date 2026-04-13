@@ -22,6 +22,13 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Allow the app to trigger skipWaiting via postMessage
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // Network-first for navigation, cache-first for tiles, stale-while-revalidate for assets
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);

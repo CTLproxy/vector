@@ -562,6 +562,11 @@ button:active {
   text-align: center;
 }
 
+.update-badge {
+  color: var(--green);
+  font-weight: 600;
+}
+
 .sync-status {
   font-size: 0.8rem;
   color: var(--accent-light);

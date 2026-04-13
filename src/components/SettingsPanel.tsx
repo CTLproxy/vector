@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { downloadJson, importFromFile } from '../lib/storage';
 import { pickSyncFile, loadFromSyncFile, saveToSyncFile, hasSyncFile } from '../lib/sync';
@@ -21,6 +21,45 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const setFollowMe = useStore((s) => s.setFollowMe);
   const [syncStatus, setSyncStatus] = useState('');
   const [proxyUrl, setProxyUrl] = useState(getCorsProxy);
+  const [swUpdate, setSwUpdate] = useState<ServiceWorker | null>(null);
+  const [updating, setUpdating] = useState(false);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      if (!reg) return;
+      // Already waiting
+      if (reg.waiting) { setSwUpdate(reg.waiting); return; }
+      // Listen for new SW
+      reg.addEventListener('updatefound', () => {
+        const sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener('statechange', () => {
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+            setSwUpdate(sw);
+          }
+        });
+      });
+      // Check for updates now
+      reg.update();
+    });
+  }, []);
+
+  const handleForceUpdate = () => {
+    if (swUpdate) {
+      setUpdating(true);
+      swUpdate.postMessage({ type: 'SKIP_WAITING' });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    } else {
+      // No waiting SW — just clear caches and reload
+      setUpdating(true);
+      caches.keys().then((names) =>
+        Promise.all(names.map((n) => caches.delete(n)))
+      ).then(() => window.location.reload());
+    }
+  };
 
   const handleExport = () => {
     downloadJson(places, savedLists);
@@ -176,6 +215,19 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
 
         <section>
           <p className="settings-meta">{places.length} places saved</p>
+          <p className="settings-meta">
+            Version {__APP_VERSION__}
+            {swUpdate && <span className="update-badge"> — Update available!</span>}
+          </p>
+          <div className="settings-row" style={{ justifyContent: 'center' }}>
+            <button
+              className={swUpdate ? 'btn-primary' : 'btn-secondary'}
+              onClick={handleForceUpdate}
+              disabled={updating}
+            >
+              {updating ? 'Updating…' : swUpdate ? 'Update Now' : 'Force Refresh'}
+            </button>
+          </div>
         </section>
 
         <button className="btn-secondary close-btn" onClick={onClose}>
