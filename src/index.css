@@ -756,12 +756,10 @@ button:active {
   white-space: pre-line;
 }
 
-.captcha-frame {
-  width: 100%;
-  height: 320px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: #fff;
+.captcha-link {
+  display: block;
+  text-align: center;
+  margin: 12px 0;
 }
 
 /* ===== List Preview ===== */

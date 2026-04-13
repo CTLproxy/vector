@@ -37,12 +37,17 @@ function FlyToUser() {
 function MapClickHandler() {
   const isAddingPlace = useStore((s) => s.isAddingPlace);
   const setAddingPosition = useStore((s) => s.setAddingPosition);
+  const setMapCenter = useStore((s) => s.setMapCenter);
 
   useMapEvents({
     click(e) {
       if (isAddingPlace) {
         setAddingPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
       }
+    },
+    moveend(e) {
+      const c = e.target.getCenter();
+      setMapCenter({ lat: c.lat, lng: c.lng });
     },
   });
 

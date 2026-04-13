@@ -17,6 +17,8 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const setFavMode = useStore((s) => s.setFavMode);
   const radiusKm = useStore((s) => s.radiusKm);
   const setRadiusKm = useStore((s) => s.setRadiusKm);
+  const followMe = useStore((s) => s.followMe);
+  const setFollowMe = useStore((s) => s.setFollowMe);
   const [syncStatus, setSyncStatus] = useState('');
   const [proxyUrl, setProxyUrl] = useState(getCorsProxy);
 
@@ -83,7 +85,7 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
         <section>
           <h4>Search Radius</h4>
           <p className="settings-hint">
-            Only show places within this distance. Set to 0 to show all.
+            Only show places within this distance from the map center. Set to 0 to show all.
           </p>
           <div className="settings-row radius-row">
             <input
@@ -97,6 +99,16 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
             <span className="radius-value">
               {radiusKm === 0 ? 'Off' : `${radiusKm} km`}
             </span>
+          </div>
+          <div className="settings-row">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={followMe}
+                onChange={(e) => setFollowMe(e.target.checked)}
+              />
+              Follow Me (radius from my location)
+            </label>
           </div>
         </section>
 

@@ -17,7 +17,8 @@ export interface ProxyResult {
 
 /** Thrown when the proxy response contains a Google CAPTCHA / redirect page */
 export class CaptchaError extends Error {
-  constructor(public captchaHtml: string) {
+  /** The original URL that triggered the captcha */
+  constructor(public originalUrl: string) {
     super('Google returned a CAPTCHA challenge. Please solve it to continue.');
     this.name = 'CaptchaError';
   }
@@ -69,7 +70,7 @@ export async function fetchViaProxy(
 
       // Detect captcha / redirect pages
       if (isCaptchaPage(body)) {
-        throw new CaptchaError(body);
+        throw new CaptchaError(url);
       }
 
       return {

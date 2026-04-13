@@ -38,7 +38,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
   const [listRating, setListRating] = useState(4);
 
   // Captcha state
-  const [captchaHtml, setCaptchaHtml] = useState('');
+  const [captchaUrl, setCaptchaUrl] = useState('');
 
 
 
@@ -76,7 +76,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
             return;
           } catch (err) {
             if (err instanceof CaptchaError) {
-              setCaptchaHtml(err.captchaHtml);
+              setCaptchaUrl(err.originalUrl);
               setStep('captcha');
               return;
             }
@@ -130,7 +130,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
         setStep('error');
       } catch (err) {
         if (err instanceof CaptchaError) {
-          setCaptchaHtml(err.captchaHtml);
+          setCaptchaUrl(err.originalUrl);
           setStep('captcha');
           return;
         }
@@ -303,19 +303,13 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
 
         {step === 'captcha' && (
           <>
-            <h3>Verification Required</h3>
+            <h3>Temporarily Blocked</h3>
             <p className="settings-hint">
-              Google is requesting verification. Solve the challenge below, then retry.
+              Google is blocking requests from the proxy server. This usually resolves on its own — wait a minute and retry.
             </p>
-            <iframe
-              className="captcha-frame"
-              srcDoc={captchaHtml}
-              sandbox="allow-scripts allow-forms allow-same-origin"
-              title="Google verification"
-            />
             <div className="form-actions">
               <button className="btn-secondary" onClick={onClose}>Cancel</button>
-              <button className="btn-primary" onClick={() => { setStep('paste'); setCaptchaHtml(''); }}>
+              <button className="btn-primary" onClick={() => { setStep('paste'); setCaptchaUrl(''); }}>
                 Retry
               </button>
             </div>
