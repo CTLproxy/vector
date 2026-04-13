@@ -9,10 +9,11 @@ import {
   extractCoordsFromHtml,
   ParsedPlace,
 } from '../lib/link-parser';
-import { fetchViaProxy, extractProxiedUrl } from '../lib/cors-proxy';
+import { fetchViaProxy, extractProxiedUrl, CaptchaError } from '../lib/cors-proxy';
+import RatingInput from './RatingInput';
 import { isListPageHtml, fetchGoogleListPlaces } from '../lib/google-list';
 
-type Step = 'paste' | 'resolving' | 'confirm' | 'confirm-list' | 'error';
+type Step = 'paste' | 'resolving' | 'confirm' | 'confirm-list' | 'captcha' | 'error';
 
 export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
   const addPlace = useStore((s) => s.addPlace);
@@ -35,6 +36,9 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
   const [listName, setListName] = useState('');
   const [listType, setListType] = useState<PlaceType>('restaurant');
   const [listRating, setListRating] = useState(4);
+
+  // Captcha state
+  const [captchaHtml, setCaptchaHtml] = useState('');
 
 
 
@@ -71,6 +75,11 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
             setStep('confirm-list');
             return;
           } catch (err) {
+            if (err instanceof CaptchaError) {
+              setCaptchaHtml(err.captchaHtml);
+              setStep('captcha');
+              return;
+            }
             setError(`Failed to import list: ${err instanceof Error ? err.message : 'Unknown error'}`);
             setStep('error');
             return;
@@ -120,6 +129,11 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
         setError('Could not extract place data from this link. Try pasting the full (non-shortened) URL.');
         setStep('error');
       } catch (err) {
+        if (err instanceof CaptchaError) {
+          setCaptchaHtml(err.captchaHtml);
+          setStep('captcha');
+          return;
+        }
         setError(`Failed to resolve link: ${err instanceof Error ? err.message : 'Unknown error'}`);
         setStep('error');
       }
@@ -229,18 +243,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
                 <option value="bar">Bar</option>
                 <option value="cafe">Cafe</option>
               </select>
-              <div className="rating-input">
-                {[1, 2, 3, 4, 5].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className={`star-btn ${v <= rating ? 'filled' : ''}`}
-                    onClick={() => setRating(v)}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
+              <RatingInput value={rating} onChange={setRating} />
             </div>
             <input
               type="text"
@@ -287,23 +290,33 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
                 <option value="bar">Bar</option>
                 <option value="cafe">Cafe</option>
               </select>
-              <div className="rating-input">
-                {[1, 2, 3, 4, 5].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className={`star-btn ${v <= listRating ? 'filled' : ''}`}
-                    onClick={() => setListRating(v)}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
+              <RatingInput value={listRating} onChange={setListRating} />
             </div>
             <div className="form-actions">
               <button className="btn-secondary" onClick={onClose}>Cancel</button>
               <button className="btn-primary" onClick={handleConfirmList}>
                 Import {listPlaces.length} Places
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 'captcha' && (
+          <>
+            <h3>Verification Required</h3>
+            <p className="settings-hint">
+              Google is requesting verification. Solve the challenge below, then retry.
+            </p>
+            <iframe
+              className="captcha-frame"
+              srcDoc={captchaHtml}
+              sandbox="allow-scripts allow-forms allow-same-origin"
+              title="Google verification"
+            />
+            <div className="form-actions">
+              <button className="btn-secondary" onClick={onClose}>Cancel</button>
+              <button className="btn-primary" onClick={() => { setStep('paste'); setCaptchaHtml(''); }}>
+                Retry
               </button>
             </div>
           </>

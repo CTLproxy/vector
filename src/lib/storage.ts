@@ -1,7 +1,10 @@
-import { Place, PlacesFile, SavedList } from '../types';
+import { Place, PlacesFile, SavedList, UserPrefs } from '../types';
 
 const STORAGE_KEY = 'vector_places';
 const LISTS_KEY = 'vector_saved_lists';
+const PREFS_KEY = 'vector_prefs';
+
+export const DEFAULT_PREFS: UserPrefs = { favMode: false, radiusKm: 5 };
 
 export function loadPlaces(): Place[] {
   try {
@@ -31,6 +34,20 @@ export function loadSavedLists(): SavedList[] {
 
 export function saveSavedLists(lists: SavedList[]): void {
   localStorage.setItem(LISTS_KEY, JSON.stringify(lists));
+}
+
+export function loadPrefs(): UserPrefs {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return DEFAULT_PREFS;
+    return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
+export function savePrefs(prefs: UserPrefs): void {
+  localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
 }
 
 export function exportToJson(places: Place[], savedLists?: SavedList[]): string {

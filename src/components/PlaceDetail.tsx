@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PlaceType } from '../types';
 import { useStore } from '../store';
+import RatingInput from './RatingInput';
 
 export default function PlaceDetail() {
   const selectedPlaceId = useStore((s) => s.selectedPlaceId);
@@ -9,6 +10,7 @@ export default function PlaceDetail() {
   const updatePlace = useStore((s) => s.updatePlace);
   const deletePlace = useStore((s) => s.deletePlace);
   const setSelectedPlaceId = useStore((s) => s.setSelectedPlaceId);
+  const favMode = useStore((s) => s.favMode);
 
   const place = places.find((p) => p.id === selectedPlaceId);
 
@@ -61,18 +63,7 @@ export default function PlaceDetail() {
                 <option value="bar">Bar</option>
                 <option value="cafe">Cafe</option>
               </select>
-              <div className="rating-input">
-                {[1, 2, 3, 4, 5].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className={`star-btn ${v <= rating ? 'filled' : ''}`}
-                    onClick={() => setRating(v)}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
+              <RatingInput value={rating} onChange={setRating} />
             </div>
             <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tags" />
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
@@ -85,7 +76,19 @@ export default function PlaceDetail() {
           <>
             <h3>{place.name}</h3>
             <p className={`place-type type-${place.type}`}>{place.type}</p>
-            <p className="place-rating">{'★'.repeat(place.rating)}{'☆'.repeat(5 - place.rating)}</p>
+            {favMode ? (
+              <p className="place-rating fav-display">
+                <button
+                  className={`fav-toggle ${place.rating >= 5 ? 'is-fav' : ''}`}
+                  onClick={() => updatePlace(place.id, { rating: place.rating >= 5 ? 1 : 5 })}
+                >
+                  {place.rating >= 5 ? '❤️' : '♡'}
+                </button>
+                {place.rating >= 5 ? ' Favourite' : ' Not favourite'}
+              </p>
+            ) : (
+              <p className="place-rating">{'★'.repeat(place.rating)}{'☆'.repeat(5 - place.rating)}</p>
+            )}
             {place.tags.length > 0 && (
               <div className="place-tags">
                 {place.tags.map((t) => <span key={t} className="tag">{t}</span>)}

@@ -8,7 +8,7 @@ import {
   FilterState,
   SavedList,
 } from '../types';
-import { loadPlaces, savePlaces, loadSavedLists, saveSavedLists } from '../lib/storage';
+import { loadPlaces, savePlaces, loadSavedLists, saveSavedLists, loadPrefs, savePrefs } from '../lib/storage';
 
 interface AppState {
   // Places
@@ -39,6 +39,12 @@ interface AppState {
   filter: FilterState;
   setFilterTypes: (types: PlaceType[]) => void;
   setFilterTags: (tags: string[]) => void;
+
+  // Preferences
+  favMode: boolean;
+  setFavMode: (v: boolean) => void;
+  radiusKm: number;
+  setRadiusKm: (v: number) => void;
 
   // UI
   selectedPlaceId: string | null;
@@ -142,6 +148,20 @@ export const useStore = create<AppState>((set, get) => ({
   filter: { types: [], tags: [] },
   setFilterTypes: (types) => set((s) => ({ filter: { ...s.filter, types } })),
   setFilterTags: (tags) => set((s) => ({ filter: { ...s.filter, tags } })),
+
+  favMode: loadPrefs().favMode,
+  setFavMode: (v) => {
+    const prefs = { ...loadPrefs(), favMode: v };
+    savePrefs(prefs);
+    set({ favMode: v });
+  },
+
+  radiusKm: loadPrefs().radiusKm,
+  setRadiusKm: (v) => {
+    const prefs = { ...loadPrefs(), radiusKm: v };
+    savePrefs(prefs);
+    set({ radiusKm: v });
+  },
 
   selectedPlaceId: null,
   setSelectedPlaceId: (id) => set({ selectedPlaceId: id }),

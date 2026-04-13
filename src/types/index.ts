@@ -44,3 +44,9 @@ export interface FilterState {
   types: PlaceType[];
   tags: string[];
 }
+
+/** User preferences persisted to localStorage */
+export interface UserPrefs {
+  favMode: boolean;
+  radiusKm: number;
+}

@@ -6,6 +6,18 @@ function formatDistance(km: number): string {
   return `${km.toFixed(1)}km`;
 }
 
+function RatingDisplay({ rating }: { rating: number }) {
+  const favMode = useStore((s) => s.favMode);
+  if (favMode) {
+    return <span className="place-rating">{rating >= 5 ? '❤️' : '♡'}</span>;
+  }
+  return (
+    <span className="place-rating">
+      {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
+    </span>
+  );
+}
+
 function PlaceCard({ scored }: { scored: ScoredPlace }) {
   const { place, distance } = scored;
   const setSelectedPlaceId = useStore((s) => s.setSelectedPlaceId);
@@ -23,7 +35,7 @@ function PlaceCard({ scored }: { scored: ScoredPlace }) {
           <span className={`place-type type-${place.type}`}>{place.type}</span>
         </div>
         <div className="place-card-meta">
-          <span className="place-rating">{'★'.repeat(place.rating)}{'☆'.repeat(5 - place.rating)}</span>
+          <RatingDisplay rating={place.rating} />
           {userPosition && <span className="place-distance">{formatDistance(distance)}</span>}
         </div>
         {place.tags.length > 0 && (

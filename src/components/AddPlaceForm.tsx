@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PlaceType } from '../types';
 import { useStore } from '../store';
+import RatingInput from './RatingInput';
 
 export default function AddPlaceForm() {
   const addingPosition = useStore((s) => s.addingPosition);
@@ -63,18 +64,7 @@ export default function AddPlaceForm() {
             <option value="cafe">Cafe</option>
           </select>
 
-          <div className="rating-input">
-            {[1, 2, 3, 4, 5].map((v) => (
-              <button
-                key={v}
-                type="button"
-                className={`star-btn ${v <= rating ? 'filled' : ''}`}
-                onClick={() => setRating(v)}
-              >
-                ★
-              </button>
-            ))}
-          </div>
+          <RatingInput value={rating} onChange={setRating} />
         </div>
 
         <input

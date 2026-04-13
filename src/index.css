@@ -448,6 +448,22 @@ button:active {
   color: var(--orange);
 }
 
+.fav-toggle {
+  background: transparent;
+  border: 1px solid var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+
+.fav-toggle.is-fav {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 .form-actions {
   display: flex;
   gap: 8px;
@@ -491,6 +507,35 @@ button:active {
   display: flex;
   gap: 8px;
   margin-top: 6px;
+}
+
+.settings-row.radius-row {
+  align-items: center;
+}
+
+.settings-row.radius-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.radius-value {
+  min-width: 50px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .settings-hint {
@@ -696,6 +741,14 @@ button:active {
   color: var(--danger);
   font-size: 0.85rem;
   white-space: pre-line;
+}
+
+.captcha-frame {
+  width: 100%;
+  height: 320px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
 }
 
 /* ===== List Preview ===== */

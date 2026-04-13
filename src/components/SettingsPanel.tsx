@@ -13,6 +13,10 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const places = useStore((s) => s.places);
   const savedLists = useStore((s) => s.savedLists);
   const setPlaces = useStore((s) => s.setPlaces);
+  const favMode = useStore((s) => s.favMode);
+  const setFavMode = useStore((s) => s.setFavMode);
+  const radiusKm = useStore((s) => s.radiusKm);
+  const setRadiusKm = useStore((s) => s.setRadiusKm);
   const [syncStatus, setSyncStatus] = useState('');
   const [proxyUrl, setProxyUrl] = useState(getCorsProxy);
 
@@ -57,6 +61,44 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
         <h3>Settings</h3>
+
+        <section>
+          <h4>Rating Mode</h4>
+          <p className="settings-hint">
+            In Favourites mode, places are either ❤️ favourite (★5) or not.
+            Original ratings are preserved.
+          </p>
+          <div className="settings-row">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={favMode}
+                onChange={(e) => setFavMode(e.target.checked)}
+              />
+              Favourites mode
+            </label>
+          </div>
+        </section>
+
+        <section>
+          <h4>Search Radius</h4>
+          <p className="settings-hint">
+            Only show places within this distance. Set to 0 to show all.
+          </p>
+          <div className="settings-row radius-row">
+            <input
+              type="range"
+              min="0"
+              max="50"
+              step="1"
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(Number(e.target.value))}
+            />
+            <span className="radius-value">
+              {radiusKm === 0 ? 'Off' : `${radiusKm} km`}
+            </span>
+          </div>
+        </section>
 
         <section>
           <h4>Saved Lists</h4>

@@ -15,6 +15,27 @@ export interface ProxyResult {
   responseUrl: string;
 }
 
+/** Thrown when the proxy response contains a Google CAPTCHA / redirect page */
+export class CaptchaError extends Error {
+  constructor(public captchaHtml: string) {
+    super('Google returned a CAPTCHA challenge. Please solve it to continue.');
+    this.name = 'CaptchaError';
+  }
+}
+
+/** Detect Google's captcha / consent pages in proxy-returned HTML */
+function isCaptchaPage(html: string): boolean {
+  return (
+    /<!DOCTYPE html/i.test(html) &&
+    (html.includes('captcha') ||
+      html.includes('consent.google') ||
+      html.includes('sorry/index') ||
+      // Google redirect pages that wrap the real content in an HTML shell
+      (/^<\!DOCTYPE html.*<title>[^<]*http/i.test(html.substring(0, 500)) &&
+        !html.includes('null,null,')))
+  );
+}
+
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_RETRIES = 2;
 
@@ -44,11 +65,19 @@ export async function fetchViaProxy(
       if (!response.ok) {
         throw new Error(`Proxy fetch failed (${response.status})`);
       }
+      const body = await response.text();
+
+      // Detect captcha / redirect pages
+      if (isCaptchaPage(body)) {
+        throw new CaptchaError(body);
+      }
+
       return {
-        body: await response.text(),
+        body,
         responseUrl: response.url,
       };
     } catch (err) {
+      if (err instanceof CaptchaError) throw err;
       lastError = err instanceof Error ? err : new Error(String(err));
       // Don't retry on non-transient errors (4xx)
       if (lastError.message.includes('(4')) throw lastError;
