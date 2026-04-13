@@ -84,6 +84,17 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
           }
         }
 
+        // Strategy 0: The response URL itself is the final Maps URL (own proxy)
+        const directParse = parseMapLink(responseUrl);
+        if (directParse) {
+          if (!directParse.name) directParse.name = extractNameFromHtml(html);
+          directParse.sourceUrl = input;
+          setParsed(directParse);
+          setName(directParse.name);
+          setStep('confirm');
+          return;
+        }
+
         // Strategy 1: Some CORS proxies redirect to proxy/?FINAL_URL,
         // so the final Google Maps URL may be encoded in the response URL
         const proxiedUrl = extractProxiedUrl(responseUrl);
