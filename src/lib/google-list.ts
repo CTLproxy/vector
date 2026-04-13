@@ -47,20 +47,97 @@ export async function fetchGoogleListPlaces(
     `https://www.google.com/maps/preview/entitylist/getlist?authuser=0&hl=en&gl=us` +
     `&pb=%211m4%211s${token}%212e1%213m1%211e1%212e2%213e2%214i500`;
 
-  const { body } = await fetchViaProxy(getlistUrl);
+  const { body } = await fetchViaProxy(getlistUrl, { accept: 'application/json' });
 
-  const places = parseGetlistResponse(body, sourceUrl);
-  const listName = extractListNameFromResponse(body);
+  // Try structured JSON parse first, fall back to regex if truncated
+  const { places, listName } = parseGetlistJson(body, sourceUrl) ??
+    parseGetlistRegex(body, sourceUrl);
 
   return { name: listName || 'Imported List', places };
 }
 
 /**
- * Parse the entitylist/getlist RPC response to extract places.
- * Uses regex since the response may be truncated by the CORS proxy
- * (the proxy strips the )]}\' anti-XSSI prefix plus leading bytes).
+ * Try to parse the getlist response as full JSON.
+ * Google prefixes with )]}\' to prevent XSSI — strip it first.
+ * Returns null if parsing fails (truncated by proxy).
  */
-function parseGetlistResponse(body: string, sourceUrl: string): ParsedPlace[] {
+function parseGetlistJson(
+  body: string,
+  sourceUrl: string,
+): { places: ParsedPlace[]; listName: string } | null {
+  let json = body;
+  // Strip anti-XSSI prefix: )]}'  followed by newline
+  const prefixIdx = json.indexOf(")]}'\n");
+  if (prefixIdx !== -1) {
+    json = json.substring(prefixIdx + 5);
+  } else if (json.startsWith(")]}'")) {
+    json = json.substring(4);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    return null;
+  }
+
+  if (!Array.isArray(parsed) || !Array.isArray(parsed[0])) return null;
+
+  const places: ParsedPlace[] = [];
+  const listName = extractListNameJson(parsed);
+
+  // Entries are nested in the first element's sub-arrays
+  // Structure: parsed[0][8] = [[entry1], [entry2], ...]
+  // Each entry: [null, [null,null,"",null,"",[null,null,LAT,LNG],[id1,id2]], "NAME", ...]
+  const root = parsed[0];
+  for (let i = 0; i < root.length; i++) {
+    const entries = root[i];
+    if (!Array.isArray(entries)) continue;
+
+    for (const entry of entries) {
+      if (!Array.isArray(entry) || entry[0] !== null) continue;
+      const geo = entry[1];
+      if (!Array.isArray(geo) || !Array.isArray(geo[5])) continue;
+      const coordArr = geo[5];
+      const lat = coordArr[2];
+      const lng = coordArr[3];
+      if (typeof lat !== 'number' || typeof lng !== 'number') continue;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) continue;
+
+      const name =
+        typeof entry[2] === 'string'
+          ? entry[2].replace(/\\u0026/g, '&').replace(/\\u003d/g, '=')
+          : '';
+      places.push({ name, lat, lng, sourceUrl });
+    }
+
+    if (places.length > 0) break;
+  }
+
+  return { places, listName };
+}
+
+function extractListNameJson(parsed: unknown[]): string {
+  try {
+    const root = parsed[0] as unknown[];
+    // List name is a string in the metadata portion, typically at index 4
+    for (let i = 3; i < Math.min(root.length, 8); i++) {
+      if (typeof root[i] === 'string' && (root[i] as string).length > 0 && (root[i] as string).length < 100) {
+        return root[i] as string;
+      }
+    }
+  } catch { /* ignore */ }
+  return '';
+}
+
+/**
+ * Fallback: parse truncated getlist response using regex.
+ * The CORS proxy may strip the first ~512 bytes, losing the first entry.
+ */
+function parseGetlistRegex(
+  body: string,
+  sourceUrl: string,
+): { places: ParsedPlace[]; listName: string } {
   const places: ParsedPlace[] = [];
   const seen = new Set<string>();
 
@@ -95,7 +172,8 @@ function parseGetlistResponse(body: string, sourceUrl: string): ParsedPlace[] {
     places.push({ name, lat, lng, sourceUrl });
   }
 
-  return places;
+  const listName = extractListNameRegex(body);
+  return { places, listName };
 }
 
 /**
@@ -103,7 +181,7 @@ function parseGetlistResponse(body: string, sourceUrl: string): ParsedPlace[] {
  * In full responses: ...],"LIST NAME","",null,null,[[
  * May fail if the proxy truncated the beginning.
  */
-function extractListNameFromResponse(body: string): string {
+function extractListNameRegex(body: string): string {
   const match = body.match(
     /\["[^"]+","https:\/\/lh3\.googleusercontent\.com[^"]*","[^"]*"\],"([^"]{1,100})","",null,null,\[/,
   );

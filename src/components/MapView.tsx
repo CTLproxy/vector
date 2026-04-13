@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useStore } from '../store';
 import { useScoredPlaces } from '../hooks/useScoredPlaces';
+import { getCurrentPosition } from '../lib/geo';
 
 // Fix default marker icons (Leaflet + bundler issue)
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
@@ -48,18 +49,135 @@ function MapClickHandler() {
   return null;
 }
 
+/** Exposes the Leaflet map instance to the parent via ref */
+function MapRefSetter({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap();
+  useEffect(() => {
+    mapRef.current = map;
+  }, [map, mapRef]);
+  return null;
+}
+
+function LocateButton({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const setUserPosition = useStore((s) => s.setUserPosition);
+  const [locating, setLocating] = useState(false);
+
+  const handleLocate = useCallback(async () => {
+    setLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      setUserPosition(pos);
+      mapRef.current?.flyTo([pos.lat, pos.lng], 15, { duration: 1 });
+    } catch {
+      // silently fail — user denied or unavailable
+    } finally {
+      setLocating(false);
+    }
+  }, [setUserPosition, mapRef]);
+
+  return (
+    <button
+      className="map-ctrl-btn map-locate-btn"
+      onClick={handleLocate}
+      title="Show my location"
+      disabled={locating}
+    >
+      {locating ? '…' : '◎'}
+    </button>
+  );
+}
+
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+
+function SearchBox({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<{ name: string; lat: number; lng: number }[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const search = useCallback(async (q: string) => {
+    if (q.length < 2) { setResults([]); return; }
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        q,
+        format: 'json',
+        limit: '5',
+        addressdetails: '0',
+      });
+      const res = await fetch(`${NOMINATIM_URL}?${params}`, {
+        headers: { 'Accept-Language': 'en' },
+      });
+      if (!res.ok) { setResults([]); return; }
+      const data: { display_name: string; lat: string; lon: string }[] = await res.json();
+      setResults(data.map((d) => ({ name: d.display_name, lat: +d.lat, lng: +d.lon })));
+    } catch {
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleInput = (value: string) => {
+    setQuery(value);
+    setOpen(true);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => search(value), 350);
+  };
+
+  const handleSelect = (r: { lat: number; lng: number }) => {
+    mapRef.current?.flyTo([r.lat, r.lng], 14, { duration: 1 });
+    setOpen(false);
+    setQuery('');
+    setResults([]);
+  };
+
+  return (
+    <div className="map-search">
+      <input
+        className="map-search-input"
+        type="text"
+        placeholder="Search location…"
+        value={query}
+        onChange={(e) => handleInput(e.target.value)}
+        onFocus={() => results.length > 0 && setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+      />
+      {open && (results.length > 0 || loading) && (
+        <div className="map-search-results">
+          {loading && results.length === 0 && (
+            <div className="map-search-item map-search-loading">Searching…</div>
+          )}
+          {results.map((r, i) => (
+            <button
+              key={i}
+              className="map-search-item"
+              onMouseDown={() => handleSelect(r)}
+            >
+              {r.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MapView() {
   const userPosition = useStore((s) => s.userPosition);
   const setSelectedPlaceId = useStore((s) => s.setSelectedPlaceId);
   const isAddingPlace = useStore((s) => s.isAddingPlace);
   const addingPosition = useStore((s) => s.addingPosition);
   const scored = useScoredPlaces();
+  const mapRef = useRef<L.Map | null>(null);
 
   const center: [number, number] = userPosition
     ? [userPosition.lat, userPosition.lng]
     : [48.8566, 2.3522]; // Default: Paris
 
   return (
+    <>
     <MapContainer
       center={center}
       zoom={13}
@@ -72,6 +190,7 @@ export default function MapView() {
       />
       <FlyToUser />
       <MapClickHandler />
+      <MapRefSetter mapRef={mapRef} />
 
       {userPosition && (
         <Marker position={[userPosition.lat, userPosition.lng]} icon={USER_ICON}>
@@ -100,5 +219,11 @@ export default function MapView() {
         </Marker>
       )}
     </MapContainer>
+
+    <div className="map-controls">
+      <SearchBox mapRef={mapRef} />
+      <LocateButton mapRef={mapRef} />
+    </div>
+    </>
   );
 }

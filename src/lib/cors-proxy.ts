@@ -22,7 +22,10 @@ const MAX_RETRIES = 2;
  * Fetch a URL through a CORS proxy. The proxy follows redirects
  * and returns the final page HTML.  Retries on fetch failures.
  */
-export async function fetchViaProxy(url: string): Promise<ProxyResult> {
+export async function fetchViaProxy(
+  url: string,
+  options?: { accept?: string },
+): Promise<ProxyResult> {
   const proxy = getCorsProxy();
   const proxyUrl = proxy + encodeURIComponent(url);
   let lastError: Error | null = null;
@@ -33,7 +36,7 @@ export async function fetchViaProxy(url: string): Promise<ProxyResult> {
       const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
       const response = await fetch(proxyUrl, {
-        headers: { Accept: 'text/html' },
+        headers: { Accept: options?.accept ?? 'text/html' },
         signal: controller.signal,
       });
       clearTimeout(timer);
