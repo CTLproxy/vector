@@ -1,0 +1,18 @@
+{
+  "name": "Vector — Travel Decisions",
+  "short_name": "Vector",
+  "description": "Personal travel decision-making app",
+  "theme_color": "#1a1a2e",
+  "background_color": "#1a1a2e",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
