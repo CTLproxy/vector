@@ -13,6 +13,37 @@ import { fetchViaProxy, extractProxiedUrl, CaptchaError } from '../lib/cors-prox
 import RatingInput from './RatingInput';
 import { isListPageHtml, fetchGoogleListPlaces } from '../lib/google-list';
 
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+
+/** Extract a place query from URLs in a redirect chain (?q=... parameter) */
+function extractQueryFromChain(chain?: string[]): string | null {
+  if (!chain) return null;
+  for (const url of chain) {
+    try {
+      const u = new URL(url);
+      const q = u.searchParams.get('q');
+      if (q && q.length > 2) return q;
+    } catch { /* ignore */ }
+  }
+  return null;
+}
+
+/** Geocode a text query via Nominatim, returns { lat, lng } or null */
+async function geocodeQuery(query: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const params = new URLSearchParams({ q: query, format: 'json', limit: '1' });
+    const res = await fetch(`${NOMINATIM_URL}?${params}`, {
+      headers: { 'Accept-Language': 'en' },
+    });
+    if (!res.ok) return null;
+    const data: { lat: string; lon: string }[] = await res.json();
+    if (data.length === 0) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {
+    return null;
+  }
+}
+
 type Step = 'paste' | 'resolving' | 'confirm' | 'confirm-list' | 'captcha' | 'error';
 
 export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
@@ -58,7 +89,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
     if (isShortUrl(input)) {
       setStep('resolving');
       try {
-        const { body: html, responseUrl } = await fetchViaProxy(input);
+        const { body: html, responseUrl, redirectChain } = await fetchViaProxy(input);
 
         // Check if this is a list page
         if (isListPageHtml(html)) {
@@ -84,19 +115,21 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
           }
         }
 
-        // Strategy 0: The response URL itself is the final Maps URL (own proxy)
-        const directParse = parseMapLink(responseUrl);
-        if (directParse) {
-          if (!directParse.name) directParse.name = extractNameFromHtml(html);
-          directParse.sourceUrl = input;
-          setParsed(directParse);
-          setName(directParse.name);
-          setStep('confirm');
-          return;
+        // Try parsing the final URL and each URL in the redirect chain
+        const urlsToTry = [responseUrl, ...(redirectChain || [])];
+        for (const u of urlsToTry) {
+          const parsed = parseMapLink(u);
+          if (parsed) {
+            if (!parsed.name) parsed.name = extractNameFromHtml(html);
+            parsed.sourceUrl = input;
+            setParsed(parsed);
+            setName(parsed.name);
+            setStep('confirm');
+            return;
+          }
         }
 
-        // Strategy 1: Some CORS proxies redirect to proxy/?FINAL_URL,
-        // so the final Google Maps URL may be encoded in the response URL
+        // Try extracting from the external proxy URL format
         const proxiedUrl = extractProxiedUrl(responseUrl);
         if (proxiedUrl && proxiedUrl !== input) {
           const fromProxy = parseMapLink(proxiedUrl);

@@ -13,6 +13,8 @@ export interface ProxyResult {
   body: string;
   /** The final URL after redirects */
   responseUrl: string;
+  /** All URLs in the redirect chain (own proxy only) */
+  redirectChain?: string[];
 }
 
 /** Thrown when the proxy response contains a Google CAPTCHA / redirect page */
@@ -62,14 +64,14 @@ async function fetchViaOwnProxy(
     throw new Error(err.error || `Own proxy failed (${response.status})`);
   }
 
-  const data: { body: string; finalUrl: string; status: number } =
+  const data: { body: string; finalUrl: string; redirectChain?: string[]; status: number } =
     await response.json();
 
   if (isCaptchaPage(data.body)) {
     throw new CaptchaError(url);
   }
 
-  return { body: data.body, responseUrl: data.finalUrl };
+  return { body: data.body, responseUrl: data.finalUrl, redirectChain: data.redirectChain };
 }
 
 /* ─── External CORS proxy (fallback) ─── */
