@@ -30,17 +30,28 @@ function extractQueryFromChain(chain?: string[]): string | null {
 
 /** Geocode a text query via Nominatim, trying progressively simpler versions */
 async function geocodeQuery(query: string): Promise<{ lat: number; lng: number } | null> {
-  // Build a list of queries to try: full → address only → simplified
-  const queries = [query];
-  // Try dropping the first part (place name) if it has a comma
   const parts = query.split(',').map(s => s.trim());
-  if (parts.length > 2) {
-    queries.push(parts.slice(1).join(', '));  // address without place name
-  }
+
+  // Build a list of queries to try, from most to least specific
+  const queries: string[] = [query];
+
   if (parts.length > 1) {
-    // Simplify: remove postal codes and special chars
-    const simplified = parts.map(p => p.replace(/\d{3,}/g, '').trim()).filter(Boolean).join(', ');
-    queries.push(simplified);
+    // Without place name (first part)
+    queries.push(parts.slice(1).join(', '));
+  }
+
+  // Strip postal codes (e.g. "426 50", "42150") from all parts
+  const stripped = parts.map(p => p.replace(/\b\d{2,3}\s*\d{2,3}\b/g, '').replace(/\b\d{5,}\b/g, '').trim()).filter(Boolean);
+  if (stripped.length > 1) {
+    queries.push(stripped.slice(1).join(', '));  // address without name, without postal
+    queries.push(stripped.join(', '));           // all parts without postal
+  }
+
+  // Street + country only (first address part + last part)
+  if (parts.length >= 3) {
+    const street = parts[1].replace(/\b\d{2,3}\s*\d{2,3}\b/g, '').replace(/\b\d{5,}\b/g, '').trim();
+    const country = parts[parts.length - 1].trim();
+    if (street && country) queries.push(`${street} ${country}`);
   }
 
   for (const q of queries) {
@@ -89,8 +100,16 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
 
 
   const handlePaste = async () => {
-    const input = link.trim();
+    let input = link.trim();
     if (!input) return;
+
+    // Extract URL from surrounding text (e.g. "Check out https://maps.app.goo.gl/abc123 !")
+    const urlMatch = input.match(/(https?:\/\/[^\s<>"']+)/i);
+    if (urlMatch && urlMatch[1] !== input) {
+      input = urlMatch[1];
+      // Strip trailing punctuation that's not part of a URL
+      input = input.replace(/[.,;:!?)]+$/, '');
+    }
 
     // Try direct parse first (full URLs with coords)
     const direct = parseMapLink(input);
@@ -179,7 +198,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
         if (placeQuery) {
           const geocoded = await geocodeQuery(placeQuery);
           if (geocoded) {
-            const placeName = extractNameFromHtml(html) || placeQuery.split(',')[0].trim();
+            const placeName = placeQuery.split(',')[0].trim() || extractNameFromHtml(html);
             const result: ParsedPlace = { name: placeName, ...geocoded, sourceUrl: input };
             setParsed(result);
             setName(result.name);

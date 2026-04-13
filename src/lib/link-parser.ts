@@ -234,34 +234,44 @@ function isGenericMapsTitle(raw: string): boolean {
 /**
  * Extract place name from HTML meta tags or JS data (for resolved short URLs).
  */
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'");
+}
+
 export function extractNameFromHtml(html: string): string {
   // Try og:title first (both attribute orders)
   const ogTitle = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i);
   if (ogTitle) {
-    const name = ogTitle[1].replace(/ - Google Maps$/i, '').trim();
+    const name = decodeHtmlEntities(ogTitle[1]).replace(/ - Google Maps$/i, '').trim();
     if (!isGenericMapsTitle(name)) return name;
   }
   const ogTitleRev = html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:title"/i);
   if (ogTitleRev) {
-    const name = ogTitleRev[1].replace(/ - Google Maps$/i, '').trim();
+    const name = decodeHtmlEntities(ogTitleRev[1]).replace(/ - Google Maps$/i, '').trim();
     if (!isGenericMapsTitle(name)) return name;
   }
 
   // Title tag
   const title = html.match(/<title[^>]*>([^<]+)<\/title>/i);
   if (title) {
-    const name = title[1].replace(/ - Google Maps$/i, '').trim();
+    const name = decodeHtmlEntities(title[1]).replace(/ - Google Maps$/i, '').trim();
     if (!isGenericMapsTitle(name)) return name;
   }
 
   // Google Maps APP_INITIALIZATION_STATE contains the place name as a string in the JS data
   // Pattern: "0x...","Place Name" in the initialization array
   const appInit = html.match(/"0x[0-9a-f]+:[0-9a-fx]+","([^"]{2,80})"/i);
-  if (appInit) return appInit[1];
+  if (appInit) return decodeHtmlEntities(appInit[1]);
 
   // Fallback: authuser...q=Name pattern in preload link
   const preload = html.match(/[?&]q=([^&"<>]{2,80})/);
-  if (preload) return decodeURIComponent(preload[1].replace(/\+/g, ' '));
+  if (preload) return decodeHtmlEntities(decodeURIComponent(preload[1].replace(/\+/g, ' ')));
 
   return '';
 }
