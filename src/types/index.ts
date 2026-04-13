@@ -49,5 +49,4 @@ export interface FilterState {
 export interface UserPrefs {
   favMode: boolean;
   radiusKm: number;
-  followMe: boolean;
 }

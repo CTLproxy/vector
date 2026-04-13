@@ -28,20 +28,36 @@ function extractQueryFromChain(chain?: string[]): string | null {
   return null;
 }
 
-/** Geocode a text query via Nominatim, returns { lat, lng } or null */
+/** Geocode a text query via Nominatim, trying progressively simpler versions */
 async function geocodeQuery(query: string): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const params = new URLSearchParams({ q: query, format: 'json', limit: '1' });
-    const res = await fetch(`${NOMINATIM_URL}?${params}`, {
-      headers: { 'Accept-Language': 'en' },
-    });
-    if (!res.ok) return null;
-    const data: { lat: string; lon: string }[] = await res.json();
-    if (data.length === 0) return null;
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  } catch {
-    return null;
+  // Build a list of queries to try: full → address only → simplified
+  const queries = [query];
+  // Try dropping the first part (place name) if it has a comma
+  const parts = query.split(',').map(s => s.trim());
+  if (parts.length > 2) {
+    queries.push(parts.slice(1).join(', '));  // address without place name
   }
+  if (parts.length > 1) {
+    // Simplify: remove postal codes and special chars
+    const simplified = parts.map(p => p.replace(/\d{3,}/g, '').trim()).filter(Boolean).join(', ');
+    queries.push(simplified);
+  }
+
+  for (const q of queries) {
+    if (q.length < 3) continue;
+    try {
+      const params = new URLSearchParams({ q, format: 'json', limit: '1' });
+      const res = await fetch(`${NOMINATIM_URL}?${params}`, {
+        headers: { 'Accept-Language': 'en' },
+      });
+      if (!res.ok) continue;
+      const data: { lat: string; lon: string }[] = await res.json();
+      if (data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+    } catch { /* try next */ }
+  }
+  return null;
 }
 
 type Step = 'paste' | 'resolving' | 'confirm' | 'confirm-list' | 'captcha' | 'error';

@@ -40,17 +40,15 @@ interface AppState {
   setFilterTypes: (types: PlaceType[]) => void;
   setFilterTags: (tags: string[]) => void;
 
-  // Map center (for radius filtering)
-  mapCenter: GeoPosition | null;
-  setMapCenter: (pos: GeoPosition) => void;
-
   // Preferences
   favMode: boolean;
   setFavMode: (v: boolean) => void;
   radiusKm: number;
   setRadiusKm: (v: number) => void;
-  followMe: boolean;
-  setFollowMe: (v: boolean) => void;
+
+  // Map center (for radius filtering)
+  mapCenter: GeoPosition | null;
+  setMapCenter: (pos: GeoPosition) => void;
 
   // UI
   selectedPlaceId: string | null;
@@ -167,13 +165,6 @@ export const useStore = create<AppState>((set, get) => ({
     const prefs = { ...loadPrefs(), radiusKm: v };
     savePrefs(prefs);
     set({ radiusKm: v });
-  },
-
-  followMe: loadPrefs().followMe,
-  setFollowMe: (v) => {
-    const prefs = { ...loadPrefs(), followMe: v };
-    savePrefs(prefs);
-    set({ followMe: v });
   },
 
   mapCenter: null,

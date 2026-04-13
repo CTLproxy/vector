@@ -6,14 +6,10 @@ export function useScoredPlaces(): ScoredPlace[] {
   const places = useStore((s) => s.places);
   const userPosition = useStore((s) => s.userPosition);
   const mapCenter = useStore((s) => s.mapCenter);
-  const followMe = useStore((s) => s.followMe);
   const sortMode = useStore((s) => s.sortMode);
   const filter = useStore((s) => s.filter);
   const favMode = useStore((s) => s.favMode);
   const radiusKm = useStore((s) => s.radiusKm);
-
-  // Radius origin: user position in Follow Me mode, otherwise map center
-  const radiusOrigin = followMe ? userPosition : mapCenter;
 
   return useMemo(() => {
     let filtered = places;
@@ -27,10 +23,10 @@ export function useScoredPlaces(): ScoredPlace[] {
       );
     }
 
-    // Radius filter: exclude places outside the radius from the chosen origin
-    if (radiusOrigin && radiusKm > 0) {
+    // Radius filter: from map center
+    if (mapCenter && radiusKm > 0) {
       filtered = filtered.filter(
-        (p) => haversineKm(radiusOrigin, { lat: p.lat, lng: p.lng }) <= radiusKm,
+        (p) => haversineKm(mapCenter, { lat: p.lat, lng: p.lng }) <= radiusKm,
       );
     }
 
@@ -40,5 +36,5 @@ export function useScoredPlaces(): ScoredPlace[] {
       : filtered;
 
     return scorePlaces(effective, userPosition, sortMode);
-  }, [places, userPosition, radiusOrigin, sortMode, filter, favMode, radiusKm]);
+  }, [places, userPosition, mapCenter, sortMode, filter, favMode, radiusKm]);
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { downloadJson, importFromFile } from '../lib/storage';
-import { pickSyncFile, loadFromSyncFile, saveToSyncFile, hasSyncFile } from '../lib/sync';
 import { getCorsProxy, setCorsProxy } from '../lib/cors-proxy';
 
 interface Props {
@@ -17,8 +16,6 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const setFavMode = useStore((s) => s.setFavMode);
   const radiusKm = useStore((s) => s.radiusKm);
   const setRadiusKm = useStore((s) => s.setRadiusKm);
-  const followMe = useStore((s) => s.followMe);
-  const setFollowMe = useStore((s) => s.setFollowMe);
   const [syncStatus, setSyncStatus] = useState('');
   const [proxyUrl, setProxyUrl] = useState(getCorsProxy);
   const [swUpdate, setSwUpdate] = useState<ServiceWorker | null>(null);
@@ -73,24 +70,19 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
     }
   };
 
-  const handlePickSync = async () => {
-    const ok = await pickSyncFile();
-    setSyncStatus(ok ? 'Sync file selected.' : 'File System Access not supported. Use export/import instead.');
+  const handleSync = () => {
+    // Export current data, then immediately offer import
+    // This way user can save to cloud drive, then load from another device
+    downloadJson(places, savedLists, 'vector_sync.json');
+    setSyncStatus('Sync file downloaded. Save it to iCloud/Google Drive to access from other devices.');
   };
 
-  const handleLoadFromFile = async () => {
-    const loaded = await loadFromSyncFile();
-    if (loaded) {
-      setPlaces(loaded);
-      setSyncStatus(`Loaded ${loaded.length} places from sync file.`);
-    } else {
-      setSyncStatus('Failed to load from sync file.');
+  const handleSyncLoad = async () => {
+    const imported = await importFromFile();
+    if (imported) {
+      setPlaces(imported);
+      setSyncStatus(`Synced ${imported.length} places from file.`);
     }
-  };
-
-  const handleSaveToFile = async () => {
-    const ok = await saveToSyncFile(places);
-    setSyncStatus(ok ? 'Saved to sync file.' : 'Failed to save.');
   };
 
   const handleProxyChange = (value: string) => {
@@ -139,16 +131,6 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
               {radiusKm === 0 ? 'Off' : `${radiusKm} km`}
             </span>
           </div>
-          <div className="settings-row">
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={followMe}
-                onChange={(e) => setFollowMe(e.target.checked)}
-              />
-              Follow Me (radius from my location)
-            </label>
-          </div>
         </section>
 
         <section>
@@ -178,25 +160,20 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
         </section>
 
         <section>
-          <h4>File Sync</h4>
+          <h4>Sync Between Devices</h4>
           <p className="settings-hint">
-            Select a JSON file on iCloud Drive / Google Drive for syncing between devices.
+            To sync: tap "Save Sync File" to download your data as a file.
+            Save it to iCloud Drive, Google Drive, or Dropbox.
+            On another device, tap "Load Sync File" and pick the same file.
           </p>
           <div className="settings-row">
-            <button className="btn-secondary" onClick={handlePickSync}>
-              Pick Sync File
+            <button className="btn-secondary" onClick={handleSync}>
+              Save Sync File
+            </button>
+            <button className="btn-primary" onClick={handleSyncLoad}>
+              Load Sync File
             </button>
           </div>
-          {hasSyncFile() && (
-            <div className="settings-row">
-              <button className="btn-secondary" onClick={handleLoadFromFile}>
-                Load from File
-              </button>
-              <button className="btn-primary" onClick={handleSaveToFile}>
-                Save to File
-              </button>
-            </div>
-          )}
           {syncStatus && <p className="sync-status">{syncStatus}</p>}
         </section>
 
