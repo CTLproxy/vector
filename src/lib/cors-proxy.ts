@@ -11,7 +11,7 @@ export function setCorsProxy(proxy: string): void {
 
 export interface ProxyResult {
   body: string;
-  /** The browser-visible response URL (may contain the final redirect target in the proxy URL) */
+  /** The final URL after redirects */
   responseUrl: string;
 }
 
@@ -40,11 +40,41 @@ function isCaptchaPage(html: string): boolean {
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_RETRIES = 2;
 
-/**
- * Fetch a URL through a CORS proxy. The proxy follows redirects
- * and returns the final page HTML.  Retries on fetch failures.
- */
-export async function fetchViaProxy(
+/* ─── Own Vercel API proxy (primary) ─── */
+
+async function fetchViaOwnProxy(
+  url: string,
+  options?: { accept?: string },
+): Promise<ProxyResult> {
+  const params = new URLSearchParams({ url });
+  if (options?.accept) params.set('accept', options.accept);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  const response = await fetch(`/api/proxy?${params}`, {
+    signal: controller.signal,
+  });
+  clearTimeout(timer);
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Unknown' }));
+    throw new Error(err.error || `Own proxy failed (${response.status})`);
+  }
+
+  const data: { body: string; finalUrl: string; status: number } =
+    await response.json();
+
+  if (isCaptchaPage(data.body)) {
+    throw new CaptchaError(url);
+  }
+
+  return { body: data.body, responseUrl: data.finalUrl };
+}
+
+/* ─── External CORS proxy (fallback) ─── */
+
+async function fetchViaExternalProxy(
   url: string,
   options?: { accept?: string },
 ): Promise<ProxyResult> {
@@ -68,19 +98,14 @@ export async function fetchViaProxy(
       }
       const body = await response.text();
 
-      // Detect captcha / redirect pages
       if (isCaptchaPage(body)) {
         throw new CaptchaError(url);
       }
 
-      return {
-        body,
-        responseUrl: response.url,
-      };
+      return { body, responseUrl: response.url };
     } catch (err) {
       if (err instanceof CaptchaError) throw err;
       lastError = err instanceof Error ? err : new Error(String(err));
-      // Don't retry on non-transient errors (4xx)
       if (lastError.message.includes('(4')) throw lastError;
       if (attempt < MAX_RETRIES) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
@@ -88,6 +113,26 @@ export async function fetchViaProxy(
     }
   }
   throw lastError ?? new Error('Proxy fetch failed');
+}
+
+/**
+ * Fetch a URL through our own Vercel API proxy first,
+ * falling back to the external CORS proxy if that fails.
+ */
+export async function fetchViaProxy(
+  url: string,
+  options?: { accept?: string },
+): Promise<ProxyResult> {
+  // Try own proxy first (only works when deployed on Vercel)
+  try {
+    return await fetchViaOwnProxy(url, options);
+  } catch (err) {
+    // If captcha, don't fallback — both proxies will hit the same issue
+    if (err instanceof CaptchaError) throw err;
+    // Own proxy unavailable (local dev, or Vercel down) — fall back
+  }
+
+  return fetchViaExternalProxy(url, options);
 }
 
 /**
