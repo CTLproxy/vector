@@ -7,8 +7,10 @@ import {
   SortMode,
   FilterState,
   SavedList,
+  ThemeType,
 } from '../types';
 import { loadPlaces, savePlaces, loadSavedLists, saveSavedLists, loadPrefs, savePrefs } from '../lib/storage';
+import { addTombstone } from '../lib/cloud-sync';
 
 interface AppState {
   // Places
@@ -17,6 +19,7 @@ interface AppState {
   updatePlace: (id: string, p: Partial<Omit<Place, 'id' | 'createdAt'>>) => void;
   deletePlace: (id: string) => void;
   setPlaces: (places: Place[]) => void;
+  setSavedLists: (lists: SavedList[]) => void;
   addPlaces: (places: Omit<Place, 'id' | 'createdAt' | 'updatedAt'>[]) => void;
   removePlaces: (ids: string[]) => void;
   detachPlacesFromList: (ids: string[]) => void;
@@ -45,6 +48,8 @@ interface AppState {
   setFavMode: (v: boolean) => void;
   radiusKm: number;
   setRadiusKm: (v: number) => void;
+  theme: ThemeType;
+  setTheme: (v: ThemeType) => void;
 
   // Map center (for radius filtering)
   mapCenter: GeoPosition | null;
@@ -79,6 +84,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   deletePlace: (id) => {
+    addTombstone(id);
     const next = get().places.filter((p) => p.id !== id);
     savePlaces(next);
     set({ places: next, selectedPlaceId: null });
@@ -87,6 +93,11 @@ export const useStore = create<AppState>((set, get) => ({
   setPlaces: (places) => {
     savePlaces(places);
     set({ places });
+  },
+
+  setSavedLists: (lists) => {
+    saveSavedLists(lists);
+    set({ savedLists: lists });
   },
 
   addPlaces: (newPlaces) => {
@@ -103,6 +114,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   removePlaces: (ids) => {
+    ids.forEach(addTombstone);
     const idSet = new Set(ids);
     const next = get().places.filter((p) => !idSet.has(p.id));
     savePlaces(next);
@@ -165,6 +177,14 @@ export const useStore = create<AppState>((set, get) => ({
     const prefs = { ...loadPrefs(), radiusKm: v };
     savePrefs(prefs);
     set({ radiusKm: v });
+  },
+
+  theme: loadPrefs().theme,
+  setTheme: (v) => {
+    const prefs = { ...loadPrefs(), theme: v };
+    savePrefs(prefs);
+    document.documentElement.setAttribute('data-theme', v);
+    set({ theme: v });
   },
 
   mapCenter: null,

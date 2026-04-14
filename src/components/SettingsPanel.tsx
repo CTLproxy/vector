@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { downloadJson, importFromFile } from '../lib/storage';
 import { getCorsProxy, setCorsProxy } from '../lib/cors-proxy';
+import { ThemeType } from '../types';
+import {
+  getSyncId,
+  setSyncId,
+  clearSyncId,
+  getLastSyncedAt,
+  createSyncBlob,
+  performSync,
+} from '../lib/cloud-sync';
 
 interface Props {
   onClose: () => void;
@@ -12,14 +21,43 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const places = useStore((s) => s.places);
   const savedLists = useStore((s) => s.savedLists);
   const setPlaces = useStore((s) => s.setPlaces);
+  const setSavedLists = useStore((s) => s.setSavedLists);
   const favMode = useStore((s) => s.favMode);
   const setFavMode = useStore((s) => s.setFavMode);
   const radiusKm = useStore((s) => s.radiusKm);
   const setRadiusKm = useStore((s) => s.setRadiusKm);
+  const theme = useStore((s) => s.theme);
+  const setTheme = useStore((s) => s.setTheme);
+
+  // Non-linear radius: slider 0-100 maps to 0-50 km
+  // 0-50 → 0-5 km (0.1 km precision), 50-75 → 5-10 km (0.5 km), 75-100 → 10-50 km
+  const kmToSlider = (km: number): number => {
+    if (km <= 0) return 0;
+    if (km <= 5) return (km / 5) * 50;
+    if (km <= 10) return 50 + ((km - 5) / 5) * 25;
+    return 75 + ((km - 10) / 40) * 25;
+  };
+
+  const sliderToKm = (v: number): number => {
+    if (v <= 0) return 0;
+    if (v <= 50) return Math.round((v / 50) * 5 * 10) / 10; // 0.1 precision
+    if (v <= 75) return Math.round((5 + ((v - 50) / 25) * 5) * 2) / 2; // 0.5 precision
+    return Math.round(10 + ((v - 75) / 25) * 40); // 1 km precision
+  };
+
+  const formatRadius = (km: number): string => {
+    if (km <= 0) return 'Off';
+    if (km < 1) return `${Math.round(km * 1000)}m`;
+    if (km % 1 === 0) return `${km} km`;
+    return `${km.toFixed(1)} km`;
+  };
   const [syncStatus, setSyncStatus] = useState('');
   const [proxyUrl, setProxyUrl] = useState(getCorsProxy);
   const [swUpdate, setSwUpdate] = useState<ServiceWorker | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [cloudSyncId, setCloudSyncId] = useState(getSyncId() || '');
+  const [syncKeyInput, setSyncKeyInput] = useState('');
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
@@ -70,19 +108,48 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
     }
   };
 
-  const handleSync = () => {
-    // Export current data, then immediately offer import
-    // This way user can save to cloud drive, then load from another device
-    downloadJson(places, savedLists, 'vector_sync.json');
-    setSyncStatus('Sync file downloaded. Save it to iCloud/Google Drive to access from other devices.');
+  const handleCreateSyncKey = async () => {
+    setSyncing(true);
+    setSyncStatus('');
+    try {
+      const blobId = await createSyncBlob(places, savedLists);
+      setCloudSyncId(blobId);
+      setSyncStatus(`Sync key created! Share this key with your other devices: ${blobId}`);
+    } catch (err) {
+      setSyncStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setSyncing(false);
+    }
   };
 
-  const handleSyncLoad = async () => {
-    const imported = await importFromFile();
-    if (imported) {
-      setPlaces(imported);
-      setSyncStatus(`Synced ${imported.length} places from file.`);
+  const handleConnectSyncKey = () => {
+    const key = syncKeyInput.trim();
+    if (!key) return;
+    setSyncId(key);
+    setCloudSyncId(key);
+    setSyncKeyInput('');
+    setSyncStatus('Sync key saved. Tap "Sync Now" to pull data.');
+  };
+
+  const handleCloudSync = async () => {
+    setSyncing(true);
+    setSyncStatus('');
+    try {
+      const { places: merged, savedLists: mergedLists, result } = await performSync(places, savedLists);
+      setPlaces(merged);
+      setSavedLists(mergedLists);
+      setSyncStatus(`Synced! ${result.merged} places total.`);
+    } catch (err) {
+      setSyncStatus(`Sync failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setSyncing(false);
     }
+  };
+
+  const handleDisconnectSync = () => {
+    clearSyncId();
+    setCloudSyncId('');
+    setSyncStatus('Sync disconnected.');
   };
 
   const handleProxyChange = (value: string) => {
@@ -94,6 +161,21 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
         <h3>Settings</h3>
+
+        <section>
+          <h4>Theme</h4>
+          <div className="settings-row theme-row">
+            {([['dark', '🌙 Dark'], ['light', '☀️ Light'], ['glass', '💎 Glass']] as [ThemeType, string][]).map(([t, label]) => (
+              <button
+                key={t}
+                className={`theme-btn ${theme === t ? 'active' : ''}`}
+                onClick={() => setTheme(t)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
 
         <section>
           <h4>Rating Mode</h4>
@@ -122,13 +204,13 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
             <input
               type="range"
               min="0"
-              max="50"
+              max="100"
               step="1"
-              value={radiusKm}
-              onChange={(e) => setRadiusKm(Number(e.target.value))}
+              value={kmToSlider(radiusKm)}
+              onChange={(e) => setRadiusKm(sliderToKm(Number(e.target.value)))}
             />
             <span className="radius-value">
-              {radiusKm === 0 ? 'Off' : `${radiusKm} km`}
+              {formatRadius(radiusKm)}
             </span>
           </div>
         </section>
@@ -160,20 +242,47 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
         </section>
 
         <section>
-          <h4>Sync Between Devices</h4>
-          <p className="settings-hint">
-            To sync: tap "Save Sync File" to download your data as a file.
-            Save it to iCloud Drive, Google Drive, or Dropbox.
-            On another device, tap "Load Sync File" and pick the same file.
-          </p>
-          <div className="settings-row">
-            <button className="btn-secondary" onClick={handleSync}>
-              Save Sync File
-            </button>
-            <button className="btn-primary" onClick={handleSyncLoad}>
-              Load Sync File
-            </button>
-          </div>
+          <h4>Cloud Sync</h4>
+          {cloudSyncId ? (
+            <>
+              <p className="settings-hint">
+                Sync key: <code className="sync-key-display">{cloudSyncId}</code>
+              </p>
+              <p className="settings-hint">
+                Last synced: {getLastSyncedAt() ? new Date(getLastSyncedAt()).toLocaleString() : 'Never'}
+              </p>
+              <div className="settings-row">
+                <button className="btn-primary" onClick={handleCloudSync} disabled={syncing}>
+                  {syncing ? 'Syncing…' : '↻ Sync Now'}
+                </button>
+                <button className="btn-secondary" onClick={handleDisconnectSync}>
+                  Disconnect
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="settings-hint">
+                Create a sync key to sync between devices automatically. Or enter a key from another device.
+              </p>
+              <div className="settings-row">
+                <button className="btn-primary" onClick={handleCreateSyncKey} disabled={syncing}>
+                  {syncing ? 'Creating…' : 'Create Sync Key'}
+                </button>
+              </div>
+              <div className="settings-row" style={{ flexDirection: 'column', gap: '6px' }}>
+                <input
+                  type="text"
+                  value={syncKeyInput}
+                  onChange={(e) => setSyncKeyInput(e.target.value)}
+                  placeholder="Paste sync key from another device"
+                />
+                <button className="btn-secondary" onClick={handleConnectSyncKey} disabled={!syncKeyInput.trim()}>
+                  Connect
+                </button>
+              </div>
+            </>
+          )}
           {syncStatus && <p className="sync-status">{syncStatus}</p>}
         </section>
 

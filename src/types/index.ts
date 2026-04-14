@@ -45,8 +45,11 @@ export interface FilterState {
   tags: string[];
 }
 
+export type ThemeType = 'dark' | 'light' | 'glass';
+
 /** User preferences persisted to localStorage */
 export interface UserPrefs {
   favMode: boolean;
   radiusKm: number;
+  theme: ThemeType;
 }

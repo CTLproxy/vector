@@ -4,7 +4,7 @@ const STORAGE_KEY = 'vector_places';
 const LISTS_KEY = 'vector_saved_lists';
 const PREFS_KEY = 'vector_prefs';
 
-export const DEFAULT_PREFS: UserPrefs = { favMode: false, radiusKm: 5 };
+export const DEFAULT_PREFS: UserPrefs = { favMode: false, radiusKm: 5, theme: 'dark' };
 
 export function loadPlaces(): Place[] {
   try {

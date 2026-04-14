@@ -233,6 +233,22 @@ export default function MapView() {
 
     <div className="map-controls">
       <SearchBox mapRef={mapRef} />
+      <div className="map-ctrl-group">
+        <button
+          className="map-ctrl-btn"
+          onClick={() => mapRef.current?.zoomIn()}
+          title="Zoom in"
+        >
+          +
+        </button>
+        <button
+          className="map-ctrl-btn"
+          onClick={() => mapRef.current?.zoomOut()}
+          title="Zoom out"
+        >
+          −
+        </button>
+      </div>
       <LocateButton mapRef={mapRef} />
     </div>
     </>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MapView from './components/MapView';
 import PlaceList from './components/PlaceList';
 import SortToggle from './components/SortToggle';
@@ -14,11 +14,34 @@ import ManagePlaces from './components/ManagePlaces';
 import { useStore } from './store';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useScoredPlaces } from './hooks/useScoredPlaces';
+import { getSyncId, performSync } from './lib/cloud-sync';
 
 const DECISION_COUNT = 5;
 
 export default function App() {
   useGeolocation();
+  const theme = useStore((s) => s.theme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  // Auto-sync on app start
+  const setPlaces = useStore((s) => s.setPlaces);
+  const setSavedLists = useStore((s) => s.setSavedLists);
+  useEffect(() => {
+    const syncId = getSyncId();
+    if (!syncId) return;
+    const places = useStore.getState().places;
+    const savedLists = useStore.getState().savedLists;
+    performSync(places, savedLists)
+      .then(({ places: merged, savedLists: mergedLists }) => {
+        setPlaces(merged);
+        setSavedLists(mergedLists);
+      })
+      .catch(() => {/* silent fail on auto-sync */});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const scored = useScoredPlaces();
   const isAddingPlace = useStore((s) => s.isAddingPlace);
