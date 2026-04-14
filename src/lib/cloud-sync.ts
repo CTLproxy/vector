@@ -1,4 +1,4 @@
-import { Place, SavedList, PlacesFile } from '../types';
+import { Place, SavedList } from '../types';
 
 const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob';
 const SYNC_KEY = 'vector_sync_id';
