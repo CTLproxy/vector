@@ -165,7 +165,18 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
         <section>
           <h4>Theme</h4>
           <div className="settings-row theme-row">
-            {([['dark', '🌙 Dark'], ['light', '☀️ Light'], ['glass', '💎 Glass']] as [ThemeType, string][]).map(([t, label]) => (
+            {([['dark', '🌙 Dark'], ['light', '☀️ Light']] as [ThemeType, string][]).map(([t, label]) => (
+              <button
+                key={t}
+                className={`theme-btn ${theme === t ? 'active' : ''}`}
+                onClick={() => setTheme(t)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="settings-row theme-row">
+            {([['dark-glass', '🌑 Dark Glass'], ['glass', '💎 Glass'], ['light-glass', '🤍 Light Glass']] as [ThemeType, string][]).map(([t, label]) => (
               <button
                 key={t}
                 className={`theme-btn ${theme === t ? 'active' : ''}`}

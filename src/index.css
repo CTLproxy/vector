@@ -53,118 +53,403 @@
   background: #f0f2f5;
 }
 
-/* ===== Liquid Glass Theme ===== */
+[data-theme="light"] .manage-overlay {
+  background: #f0f2f5;
+}
+
+/* ===== Shared Glass Mixin (all glass variants) ===== */
+[data-theme="glass"],
+[data-theme="dark-glass"],
+[data-theme="light-glass"] {
+  --radius: 20px;
+  --radius-sm: 14px;
+  --glass-blur: 24px;
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-highlight: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 60%);
+}
+
+/* ── Glass: Neutral (mid-tone, balanced) ── */
 [data-theme="glass"] {
-  --bg: #0a0a1a;
-  --surface: rgba(255, 255, 255, 0.08);
-  --surface2: rgba(255, 255, 255, 0.12);
+  --bg: #1a1a2e;
+  --surface: rgba(255, 255, 255, 0.07);
+  --surface2: rgba(255, 255, 255, 0.10);
   --accent: #7c8fff;
   --accent-light: #99aaff;
   --text: #f0f0ff;
-  --text-dim: #9898c0;
+  --text-dim: #a0a0c8;
   --danger: #ff6b7a;
   --green: #5aeaa0;
   --orange: #ffb347;
-  --glass-blur: 16px;
-  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+}
+
+/* ── Dark Glass: deep dark tone ── */
+[data-theme="dark-glass"] {
+  --bg: #08081a;
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface2: rgba(255, 255, 255, 0.08);
+  --accent: #6c7eff;
+  --accent-light: #8899ff;
+  --text: #e0e0f8;
+  --text-dim: #8888b0;
+  --danger: #ff5a6a;
+  --green: #4ade80;
+  --orange: #ffa533;
+  --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.12);
 }
 
+/* ── Light Glass: frosted white ── */
+[data-theme="light-glass"] {
+  --bg: #e8eaf0;
+  --surface: rgba(255, 255, 255, 0.55);
+  --surface2: rgba(255, 255, 255, 0.40);
+  --accent: #4361ee;
+  --accent-light: #5a7cff;
+  --text: #1a1a2e;
+  --text-dim: #555570;
+  --danger: #dc3545;
+  --green: #22c55e;
+  --orange: #f59e0b;
+  --glass-bg: rgba(255, 255, 255, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.65);
+}
+
+[data-theme="light-glass"] .leaflet-container {
+  background: #e8eaf0;
+}
+
+/* ── Glass: Toolbar & filter bar ── */
 [data-theme="glass"] .app-toolbar,
-[data-theme="glass"] .filter-bar {
+[data-theme="glass"] .filter-bar,
+[data-theme="dark-glass"] .app-toolbar,
+[data-theme="dark-glass"] .filter-bar,
+[data-theme="light-glass"] .app-toolbar,
+[data-theme="light-glass"] .filter-bar {
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid var(--glass-border);
 }
 
+/* ── Glass: Place cards & manage rows ── */
 [data-theme="glass"] .place-card,
-[data-theme="glass"] .manage-row {
+[data-theme="glass"] .manage-row,
+[data-theme="dark-glass"] .place-card,
+[data-theme="dark-glass"] .manage-row,
+[data-theme="light-glass"] .place-card,
+[data-theme="light-glass"] .manage-row {
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="glass"] .place-card::before,
+[data-theme="glass"] .manage-row::before,
+[data-theme="dark-glass"] .place-card::before,
+[data-theme="dark-glass"] .manage-row::before,
+[data-theme="light-glass"] .place-card::before,
+[data-theme="light-glass"] .manage-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--glass-highlight);
+  pointer-events: none;
+  border-radius: inherit;
 }
 
 [data-theme="glass"] .place-card:hover,
-[data-theme="glass"] .manage-row:hover {
-  background: rgba(255, 255, 255, 0.1);
+[data-theme="glass"] .manage-row:hover,
+[data-theme="dark-glass"] .place-card:hover,
+[data-theme="dark-glass"] .manage-row:hover {
+  background: rgba(255, 255, 255, 0.09);
 }
 
+[data-theme="light-glass"] .place-card:hover,
+[data-theme="light-glass"] .manage-row:hover {
+  background: rgba(255, 255, 255, 0.60);
+}
+
+/* ── Glass: Modals ── */
 [data-theme="glass"] .add-form,
 [data-theme="glass"] .place-detail,
 [data-theme="glass"] .settings-panel,
-[data-theme="glass"] .import-modal {
-  background: rgba(20, 20, 40, 0.85);
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
+[data-theme="glass"] .import-modal,
+[data-theme="dark-glass"] .add-form,
+[data-theme="dark-glass"] .place-detail,
+[data-theme="dark-glass"] .settings-panel,
+[data-theme="dark-glass"] .import-modal {
+  background: rgba(18, 18, 36, 0.75);
+  -webkit-backdrop-filter: blur(40px) saturate(1.5);
+  backdrop-filter: blur(40px) saturate(1.5);
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
+[data-theme="light-glass"] .add-form,
+[data-theme="light-glass"] .place-detail,
+[data-theme="light-glass"] .settings-panel,
+[data-theme="light-glass"] .import-modal {
+  background: rgba(255, 255, 255, 0.60);
+  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  backdrop-filter: blur(40px) saturate(1.4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+/* ── Glass: Overlays (decision, manage, modal) ── */
 [data-theme="glass"] .decision-overlay,
-[data-theme="glass"] .manage-overlay {
-  background: rgba(10, 10, 26, 0.92);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
+[data-theme="glass"] .manage-overlay,
+[data-theme="dark-glass"] .decision-overlay,
+[data-theme="dark-glass"] .manage-overlay {
+  background: rgba(10, 10, 26, 0.88);
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
 }
 
+[data-theme="light-glass"] .decision-overlay,
+[data-theme="light-glass"] .manage-overlay {
+  background: rgba(232, 234, 240, 0.85);
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+}
+
+[data-theme="glass"] .modal-overlay,
+[data-theme="dark-glass"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.40);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="light-glass"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.20);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* ── Glass: Decision card & dice ── */
 [data-theme="glass"] .decision-card,
-[data-theme="glass"] .dice-flash-card {
-  background: var(--glass-bg);
+[data-theme="glass"] .dice-flash-card,
+[data-theme="dark-glass"] .decision-card,
+[data-theme="dark-glass"] .dice-flash-card {
+  background: rgba(255, 255, 255, 0.06);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
 }
 
-[data-theme="glass"] .btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
+[data-theme="light-glass"] .decision-card,
+[data-theme="light-glass"] .dice-flash-card {
+  background: rgba(255, 255, 255, 0.50);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
 }
 
-[data-theme="glass"] .sort-btn,
-[data-theme="glass"] .filter-chip {
+/* ── Glass: Buttons ── */
+[data-theme="glass"] .btn-secondary,
+[data-theme="dark-glass"] .btn-secondary {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+[data-theme="light-glass"] .btn-secondary {
+  background: rgba(255, 255, 255, 0.40);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+[data-theme="glass"] .btn-primary,
+[data-theme="dark-glass"] .btn-primary,
+[data-theme="light-glass"] .btn-primary {
+  border-radius: var(--radius-sm);
+}
+
+/* ── Glass: Chips ── */
+[data-theme="glass"] .sort-btn,
+[data-theme="glass"] .filter-chip,
+[data-theme="glass"] .theme-btn,
+[data-theme="dark-glass"] .sort-btn,
+[data-theme="dark-glass"] .filter-chip,
+[data-theme="dark-glass"] .theme-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+}
+
+[data-theme="light-glass"] .sort-btn,
+[data-theme="light-glass"] .filter-chip,
+[data-theme="light-glass"] .theme-btn {
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
 }
 
 [data-theme="glass"] .sort-btn.active,
-[data-theme="glass"] .filter-chip.active {
+[data-theme="glass"] .filter-chip.active,
+[data-theme="dark-glass"] .sort-btn.active,
+[data-theme="dark-glass"] .filter-chip.active,
+[data-theme="light-glass"] .sort-btn.active,
+[data-theme="light-glass"] .filter-chip.active {
   background: var(--accent);
   border-color: var(--accent);
 }
 
+/* ── Glass: Map controls ── */
 [data-theme="glass"] .map-ctrl-btn,
-[data-theme="glass"] .map-search-input {
-  background: rgba(20, 20, 40, 0.7);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+[data-theme="glass"] .map-search-input,
+[data-theme="dark-glass"] .map-ctrl-btn,
+[data-theme="dark-glass"] .map-search-input {
+  background: rgba(18, 18, 36, 0.60);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
 }
 
-[data-theme="glass"] .map-search-results {
-  background: rgba(20, 20, 40, 0.9);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
+[data-theme="light-glass"] .map-ctrl-btn,
+[data-theme="light-glass"] .map-search-input {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
 }
 
-[data-theme="glass"] .nav-button {
-  background: rgba(124, 143, 255, 0.3);
+[data-theme="glass"] .map-search-results,
+[data-theme="dark-glass"] .map-search-results {
+  background: rgba(18, 18, 36, 0.85);
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+[data-theme="light-glass"] .map-search-results {
+  background: rgba(255, 255, 255, 0.80);
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Glass: Nav button ── */
+[data-theme="glass"] .nav-button,
+[data-theme="dark-glass"] .nav-button {
+  background: rgba(124, 143, 255, 0.25);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(124, 143, 255, 0.3);
+  border: 1px solid rgba(124, 143, 255, 0.25);
+  border-radius: 50%;
 }
 
+[data-theme="light-glass"] .nav-button {
+  background: rgba(67, 97, 238, 0.20);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(67, 97, 238, 0.25);
+  border-radius: 50%;
+}
+
+/* ── Glass: Inputs ── */
 [data-theme="glass"] input,
 [data-theme="glass"] select,
-[data-theme="glass"] textarea {
+[data-theme="glass"] textarea,
+[data-theme="dark-glass"] input,
+[data-theme="dark-glass"] select,
+[data-theme="dark-glass"] textarea {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+[data-theme="light-glass"] input,
+[data-theme="light-glass"] select,
+[data-theme="light-glass"] textarea {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Glass: Tags ── */
+[data-theme="glass"] .tag,
+[data-theme="dark-glass"] .tag {
   background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+}
+
+[data-theme="light-glass"] .tag {
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+}
+
+/* ── Glass: Manage header / cluster ── */
+[data-theme="glass"] .manage-header,
+[data-theme="dark-glass"] .manage-header,
+[data-theme="light-glass"] .manage-header {
+  border-bottom: 1px solid var(--glass-border);
+}
+
+[data-theme="glass"] .manage-cluster-header,
+[data-theme="dark-glass"] .manage-cluster-header,
+[data-theme="light-glass"] .manage-cluster-header {
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* ── Glass: Decision buttons pill shape ── */
+[data-theme="glass"] .decision-skip,
+[data-theme="glass"] .decision-accept,
+[data-theme="dark-glass"] .decision-skip,
+[data-theme="dark-glass"] .decision-accept,
+[data-theme="light-glass"] .decision-skip,
+[data-theme="light-glass"] .decision-accept {
+  border-radius: 50px;
+}
+
+[data-theme="glass"] .decision-skip,
+[data-theme="dark-glass"] .decision-skip {
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--glass-border);
 }
 
-[data-theme="glass"] .tag {
-  background: rgba(255, 255, 255, 0.06);
+[data-theme="light-glass"] .decision-skip {
+  background: rgba(255, 255, 255, 0.45);
   border: 1px solid var(--glass-border);
+}
+
+/* ── Glass: Saved list cards ── */
+[data-theme="glass"] .saved-list-card,
+[data-theme="dark-glass"] .saved-list-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+[data-theme="light-glass"] .saved-list-card {
+  background: rgba(255, 255, 255, 0.40);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Glass: Theme button active state ── */
+[data-theme="glass"] .theme-btn.active,
+[data-theme="dark-glass"] .theme-btn.active {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light-glass"] .theme-btn.active {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.55);
 }
 
 body {
@@ -740,6 +1025,7 @@ button:active {
 .theme-row {
   display: flex;
   gap: 6px;
+  margin-top: 4px;
 }
 
 .theme-btn {
@@ -1343,5 +1629,60 @@ button:active {
 
   .manage-panel {
     max-width: 700px;
+  }
+}
+
+/* ===== Landscape on mobile / short screens ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+  .app {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .app-map {
+    flex: 0 0 50%;
+    height: 100dvh;
+  }
+
+  .app-toolbar {
+    width: 50%;
+    flex: 0 0 auto;
+  }
+
+  .filter-bar {
+    width: 50%;
+  }
+
+  .app-list {
+    width: 50%;
+    flex: 1;
+    overflow-y: auto;
+  }
+}
+
+@media (orientation: landscape) and (min-height: 501px) and (max-width: 767px) {
+  .app {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .app-map {
+    flex: 0 0 50%;
+    height: 100dvh;
+  }
+
+  .app-toolbar {
+    width: 50%;
+    flex: 0 0 auto;
+  }
+
+  .filter-bar {
+    width: 50%;
+  }
+
+  .app-list {
+    width: 50%;
+    flex: 1;
+    overflow-y: auto;
   }
 }

@@ -45,7 +45,7 @@ export interface FilterState {
   tags: string[];
 }
 
-export type ThemeType = 'dark' | 'light' | 'glass';
+export type ThemeType = 'dark' | 'light' | 'glass' | 'dark-glass' | 'light-glass';
 
 /** User preferences persisted to localStorage */
 export interface UserPrefs {
