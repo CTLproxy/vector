@@ -94,6 +94,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
   const [listName, setListName] = useState('');
   const [listType, setListType] = useState<PlaceType>('restaurant');
   const [listRating, setListRating] = useState(4);
+  const [listSourceUrl, setListSourceUrl] = useState('');
 
 
 
@@ -137,6 +138,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
             }
             setListPlaces(list.places);
             setListName(list.name);
+            setListSourceUrl(input);
             setStep('confirm-list');
             return;
           } catch (err) {
@@ -260,7 +262,7 @@ export default function ImportLinkModal({ onClose }: { onClose: () => void }) {
     if (listPlaces.length === 0) return;
     const savedList = addSavedList({
       name: listName || 'Imported List',
-      url: link.trim(),
+      url: listSourceUrl || link.trim(),
       lastSyncedAt: Date.now(),
       placeCount: listPlaces.length,
     });

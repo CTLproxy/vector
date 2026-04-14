@@ -46,7 +46,7 @@ function PlaceCard({ scored }: { scored: ScoredPlace }) {
   const userPosition = useStore((s) => s.userPosition);
   const savedLists = useStore((s) => s.savedLists);
 
-  const navUrl = place.sourceUrl || `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`;
+  const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`;
   const sourceList = place.sourceListId ? savedLists.find((l) => l.id === place.sourceListId) : null;
 
   return (

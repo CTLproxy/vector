@@ -731,6 +731,172 @@ button:active {
   margin: 0;
 }
 
+/* ===== Manage Places ===== */
+.manage-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+}
+
+.manage-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.manage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--surface2);
+}
+
+.manage-header h3 {
+  margin: 0;
+}
+
+.manage-search {
+  margin: 10px 16px 0;
+}
+
+.manage-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px;
+}
+
+.manage-sort {
+  display: flex;
+  gap: 4px;
+}
+
+.manage-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.manage-group-toggle {
+  padding: 0 16px;
+  font-size: 0.85rem;
+}
+
+.manage-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.manage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.manage-row-edit {
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.manage-row-main {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.manage-row-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.manage-row-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 2px;
+  font-size: 0.8rem;
+}
+
+.manage-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.manage-edit-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.manage-edit-row select {
+  flex: 1;
+}
+
+.manage-row-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.manage-delete-btn {
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 1rem;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.manage-delete-btn:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.manage-cluster {
+  margin-top: 8px;
+}
+
+.manage-cluster:first-child {
+  margin-top: 0;
+}
+
+.manage-cluster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--surface2);
+  margin-bottom: 6px;
+}
+
+.manage-cluster-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.manage-cluster-count {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
 /* ===== Utilities ===== */
 .leaflet-container {
   background: var(--bg);
@@ -990,5 +1156,9 @@ button:active {
   .settings-panel,
   .import-modal {
     border-radius: var(--radius);
+  }
+
+  .manage-panel {
+    max-width: 700px;
   }
 }

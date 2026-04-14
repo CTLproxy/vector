@@ -10,6 +10,7 @@ import RollDice from './components/RollDice';
 import SettingsPanel from './components/SettingsPanel';
 import ImportLinkModal from './components/ImportLinkModal';
 import SavedListsPanel from './components/SavedListsPanel';
+import ManagePlaces from './components/ManagePlaces';
 import { useStore } from './store';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useScoredPlaces } from './hooks/useScoredPlaces';
@@ -30,6 +31,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showImportLink, setShowImportLink] = useState(false);
   const [showSavedLists, setShowSavedLists] = useState(false);
+  const [showManage, setShowManage] = useState(false);
 
   return (
     <div className="app">
@@ -67,6 +69,13 @@ export default function App() {
             title="Import from link"
           >
             📎
+          </button>
+          <button
+            className="btn-icon"
+            onClick={() => setShowManage(true)}
+            title="Manage places"
+          >
+            📋
           </button>
           <button
             className="btn-icon"
@@ -119,6 +128,9 @@ export default function App() {
       )}
       {showSavedLists && (
         <SavedListsPanel onClose={() => setShowSavedLists(false)} />
+      )}
+      {showManage && (
+        <ManagePlaces onClose={() => setShowManage(false)} />
       )}
     </div>
   );

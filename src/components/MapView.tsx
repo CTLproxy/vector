@@ -207,13 +207,19 @@ export default function MapView() {
         <Marker
           key={place.id}
           position={[place.lat, place.lng]}
-          eventHandlers={{ click: () => setSelectedPlaceId(place.id) }}
         >
           <Popup>
-            <strong>{place.name}</strong>
-            <br />
-            {place.type} · ★{place.rating}
-            {distance > 0 && <> · {distance.toFixed(1)} km</>}
+            <div
+              style={{ cursor: 'pointer' }}
+              onClick={() => setSelectedPlaceId(place.id)}
+            >
+              <strong>{place.name}</strong>
+              <br />
+              {place.type} · ★{place.rating}
+              {distance > 0 && <> · {distance.toFixed(1)} km</>}
+              <br />
+              <small style={{ color: '#4361ee' }}>Tap for details</small>
+            </div>
           </Popup>
         </Marker>
       ))}
