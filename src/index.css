@@ -193,7 +193,7 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 [data-theme="glass"] .place-card::before,
@@ -1423,7 +1423,6 @@ button:active {
   background: var(--surface);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
-  min-height: 80px;
 }
 
 .manage-row-edit {
