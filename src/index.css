@@ -699,6 +699,38 @@ button:active {
   margin-top: 1rem;
 }
 
+/* ===== Roll Dice ===== */
+.dice-rolling {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.dice-icon {
+  font-size: 5rem;
+  animation: dice-bounce 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes dice-bounce {
+  0%   { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(-18px) rotate(20deg); }
+}
+
+.dice-flash-card {
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 14px 24px;
+  min-width: 200px;
+  text-align: center;
+  animation: dice-flash 0.12s ease-in-out;
+}
+
+.dice-flash-card h2 {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
 /* ===== Utilities ===== */
 .leaflet-container {
   background: var(--bg);

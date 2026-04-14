@@ -6,6 +6,7 @@ import FilterBar from './components/FilterBar';
 import AddPlaceForm from './components/AddPlaceForm';
 import PlaceDetail from './components/PlaceDetail';
 import DecisionMode from './components/DecisionMode';
+import RollDice from './components/RollDice';
 import SettingsPanel from './components/SettingsPanel';
 import ImportLinkModal from './components/ImportLinkModal';
 import SavedListsPanel from './components/SavedListsPanel';
@@ -25,6 +26,7 @@ export default function App() {
   const addingPosition = useStore((s) => s.addingPosition);
 
   const [showDecision, setShowDecision] = useState(false);
+  const [showRollDice, setShowRollDice] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showImportLink, setShowImportLink] = useState(false);
   const [showSavedLists, setShowSavedLists] = useState(false);
@@ -50,6 +52,14 @@ export default function App() {
             disabled={scored.length === 0}
           >
             🎯
+          </button>
+          <button
+            className="btn-icon"
+            onClick={() => setShowRollDice(true)}
+            title="Roll dice"
+            disabled={scored.length === 0}
+          >
+            🎲
           </button>
           <button
             className="btn-icon"
@@ -90,6 +100,12 @@ export default function App() {
         <DecisionMode
           candidates={scored.slice(0, DECISION_COUNT)}
           onClose={() => setShowDecision(false)}
+        />
+      )}
+      {showRollDice && scored.length > 0 && (
+        <RollDice
+          candidates={scored}
+          onClose={() => setShowRollDice(false)}
         />
       )}
       {showSettings && (
