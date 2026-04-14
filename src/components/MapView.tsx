@@ -233,6 +233,7 @@ export default function MapView() {
 
     <div className="map-controls">
       <SearchBox mapRef={mapRef} />
+      <LocateButton mapRef={mapRef} />
       <div className="map-ctrl-group">
         <button
           className="map-ctrl-btn"
@@ -249,7 +250,6 @@ export default function MapView() {
           −
         </button>
       </div>
-      <LocateButton mapRef={mapRef} />
     </div>
     </>
   );

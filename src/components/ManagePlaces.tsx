@@ -69,9 +69,12 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 
 interface Props {
   onClose: () => void;
+  onAddPlace: () => void;
+  onImportLink: () => void;
+  onSettings: () => void;
 }
 
-export default function ManagePlaces({ onClose }: Props) {
+export default function ManagePlaces({ onClose, onAddPlace, onImportLink, onSettings }: Props) {
   const places = useStore((s) => s.places);
   const updatePlace = useStore((s) => s.updatePlace);
   const deletePlace = useStore((s) => s.deletePlace);
@@ -237,7 +240,18 @@ export default function ManagePlaces({ onClose }: Props) {
       <div className="manage-panel">
         <div className="manage-header">
           <h3>Manage Places</h3>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <div className="manage-header-actions">
+            <button className="toolbar-btn" onClick={() => { onClose(); onAddPlace(); }} title="Add place">
+              ＋ <span className="toolbar-label">Add</span>
+            </button>
+            <button className="toolbar-btn" onClick={() => { onClose(); onImportLink(); }} title="Import link">
+              📎 <span className="toolbar-label">Import</span>
+            </button>
+            <button className="toolbar-btn" onClick={() => { onClose(); onSettings(); }} title="Settings">
+              ⚙
+            </button>
+            <button className="btn-close" onClick={onClose}>✕</button>
+          </div>
         </div>
 
         {/* Search */}

@@ -55,6 +55,7 @@ export default function App() {
   const [showImportLink, setShowImportLink] = useState(false);
   const [showSavedLists, setShowSavedLists] = useState(false);
   const [showManage, setShowManage] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   return (
     <div className="app">
@@ -66,63 +67,82 @@ export default function App() {
         )}
       </div>
 
-      {/* Toolbar */}
-      <div className="app-toolbar">
-        <SortToggle />
-        <div className="toolbar-actions">
-          <button
-            className="btn-icon"
-            onClick={() => setShowDecision(true)}
-            title="Decision mode"
-            disabled={scored.length === 0}
-          >
-            🎯
-          </button>
-          <button
-            className="btn-icon"
-            onClick={() => setShowRollDice(true)}
-            title="Roll dice"
-            disabled={scored.length === 0}
-          >
-            🎲
-          </button>
-          <button
-            className="btn-icon"
-            onClick={() => setShowImportLink(true)}
-            title="Import from link"
-          >
-            📎
-          </button>
-          <button
-            className="btn-icon"
-            onClick={() => setShowManage(true)}
-            title="Manage places"
-          >
-            📋
-          </button>
-          <button
-            className="btn-icon"
-            onClick={() => setIsAddingPlace(!isAddingPlace)}
-            title={isAddingPlace ? 'Cancel' : 'Add place'}
-          >
-            {isAddingPlace ? '✕' : '+'}
-          </button>
-          <button
-            className="btn-icon"
-            onClick={() => setShowSettings(true)}
-            title="Settings"
-          >
-            ⚙
-          </button>
+      {/* Right panel (toolbar + filter + list) */}
+      <div className="app-panel">
+        {/* Toolbar */}
+        <div className="app-toolbar">
+          <div className="toolbar-left">
+            <SortToggle />
+          </div>
+          <div className="toolbar-right">
+            <div className="toolbar-group">
+              <button
+                className="toolbar-btn"
+                onClick={() => setShowDecision(true)}
+                title="Decision mode"
+                disabled={scored.length === 0}
+              >
+                🎯 <span className="toolbar-label">Decide</span>
+              </button>
+              <button
+                className="toolbar-btn"
+                onClick={() => setShowRollDice(true)}
+                title="Roll dice"
+                disabled={scored.length === 0}
+              >
+                🎲 <span className="toolbar-label">Roll</span>
+              </button>
+              <div className="toolbar-more-wrap">
+                <button
+                  className="toolbar-btn toolbar-btn-more"
+                  onClick={() => setShowMore(!showMore)}
+                  title="More actions"
+                >
+                  •••
+                </button>
+              {showMore && (
+                <>
+                  <div className="toolbar-dropdown-backdrop" onClick={() => setShowMore(false)} />
+                  <div className="toolbar-dropdown">
+                    <button
+                      className="toolbar-dropdown-item"
+                      onClick={() => { setIsAddingPlace(!isAddingPlace); setShowMore(false); }}
+                    >
+                      {isAddingPlace ? '✕ Cancel' : '＋ Add Place'}
+                    </button>
+                    <button
+                      className="toolbar-dropdown-item"
+                      onClick={() => { setShowImportLink(true); setShowMore(false); }}
+                    >
+                      📎 Import Link
+                    </button>
+                    <button
+                      className="toolbar-dropdown-item"
+                      onClick={() => { setShowManage(true); setShowMore(false); }}
+                    >
+                      📋 Manage Places
+                    </button>
+                    <button
+                      className="toolbar-dropdown-item"
+                      onClick={() => { setShowSettings(true); setShowMore(false); }}
+                    >
+                      ⚙ Settings
+                    </button>
+                  </div>
+                </>
+              )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Filter bar */}
-      <FilterBar />
+        {/* Filter bar */}
+        <FilterBar />
 
-      {/* List section */}
-      <div className="app-list">
-        <PlaceList scored={scored} />
+        {/* List section */}
+        <div className="app-list">
+          <PlaceList scored={scored} />
+        </div>
       </div>
 
       {/* Modals */}
@@ -153,7 +173,12 @@ export default function App() {
         <SavedListsPanel onClose={() => setShowSavedLists(false)} />
       )}
       {showManage && (
-        <ManagePlaces onClose={() => setShowManage(false)} />
+        <ManagePlaces
+          onClose={() => setShowManage(false)}
+          onAddPlace={() => setIsAddingPlace(true)}
+          onImportLink={() => setShowImportLink(true)}
+          onSettings={() => setShowSettings(true)}
+        />
       )}
     </div>
   );
