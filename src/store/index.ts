@@ -72,6 +72,10 @@ interface AppState {
   // Visited expiry setting
   visitedExpiryDays: number;
   setVisitedExpiryDays: (v: number) => void;
+
+  // Sync mode
+  syncMode: 'manual' | 'live';
+  setSyncMode: (v: 'manual' | 'live') => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -255,5 +259,12 @@ export const useStore = create<AppState>((set, get) => ({
     const prefs = { ...loadPrefs(), visitedExpiryDays: v };
     savePrefs(prefs);
     set({ visitedExpiryDays: v });
+  },
+
+  syncMode: loadPrefs().syncMode,
+  setSyncMode: (v) => {
+    const prefs = { ...loadPrefs(), syncMode: v };
+    savePrefs(prefs);
+    set({ syncMode: v });
   },
 }));

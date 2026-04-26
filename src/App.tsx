@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import MapView from './components/MapView';
 import PlaceList from './components/PlaceList';
 import SortToggle from './components/SortToggle';
@@ -15,7 +15,7 @@ import VisitConfirmation from './components/VisitConfirmation';
 import { useStore } from './store';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useScoredPlaces } from './hooks/useScoredPlaces';
-import { getSyncId, performSync } from './lib/cloud-sync';
+import { getSyncId, performSync, scheduleDeltaSync } from './lib/cloud-sync';
 import { loadPendingVisits, savePendingVisits } from './lib/storage';
 import { PendingVisit } from './types';
 
@@ -79,6 +79,40 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', onVisible);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Live sync: subscribe to place/savedList changes and auto-sync
+  const syncMode = useStore((s) => s.syncMode);
+  const prevPlacesRef = useRef(useStore.getState().places);
+  const prevListsRef = useRef(useStore.getState().savedLists);
+
+  useEffect(() => {
+    if (syncMode !== 'live' || !getSyncId()) return;
+
+    const unsub = useStore.subscribe((state) => {
+      const placesChanged = state.places !== prevPlacesRef.current;
+      const listsChanged = state.savedLists !== prevListsRef.current;
+      prevPlacesRef.current = state.places;
+      prevListsRef.current = state.savedLists;
+
+      if (placesChanged || listsChanged) {
+        scheduleDeltaSync(
+          () => ({ places: state.places, savedLists: state.savedLists }),
+          (mergedPlaces, mergedLists) => {
+            // Only update if remote had new data
+            const current = useStore.getState();
+            if (mergedPlaces.length !== current.places.length) {
+              setPlaces(mergedPlaces);
+            }
+            if (mergedLists.length !== current.savedLists.length) {
+              setSavedLists(mergedLists);
+            }
+          },
+        );
+      }
+    });
+
+    return unsub;
+  }, [syncMode, setPlaces, setSavedLists]);
 
   const scored = useScoredPlaces();
   // Exclude visited places from Decide and Roll

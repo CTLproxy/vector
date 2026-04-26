@@ -5,7 +5,7 @@ const LISTS_KEY = 'vector_saved_lists';
 const PREFS_KEY = 'vector_prefs';
 const PENDING_VISITS_KEY = 'vector_pending_visits';
 
-export const DEFAULT_PREFS: UserPrefs = { favMode: false, radiusKm: 5, theme: 'dark', visitedExpiryDays: 30 };
+export const DEFAULT_PREFS: UserPrefs = { favMode: false, radiusKm: 5, theme: 'dark', visitedExpiryDays: 30, syncMode: 'manual' };
 
 export function loadPlaces(): Place[] {
   try {

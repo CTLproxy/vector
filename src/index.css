@@ -1122,6 +1122,21 @@ button:active {
   font-variant-numeric: tabular-nums;
 }
 
+.settings-label {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.settings-select {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
 .toggle-label {
   display: flex;
   align-items: center;

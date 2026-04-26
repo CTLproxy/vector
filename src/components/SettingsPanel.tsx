@@ -29,6 +29,8 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const setTheme = useStore((s) => s.setTheme);
   const visitedExpiryDays = useStore((s) => s.visitedExpiryDays);
   const setVisitedExpiryDays = useStore((s) => s.setVisitedExpiryDays);
+  const syncMode = useStore((s) => s.syncMode);
+  const setSyncMode = useStore((s) => s.setSyncMode);
 
   // Non-linear radius: slider 0-100 maps to 0-50 km
   // 0-50 → 0-5 km (0.1 km precision), 50-75 → 5-10 km (0.5 km), 75-100 → 10-50 km
@@ -284,6 +286,17 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
                 <button className="btn-secondary" onClick={handleDisconnectSync}>
                   Disconnect
                 </button>
+              </div>
+              <div className="settings-row" style={{ marginTop: '8px' }}>
+                <label className="settings-label">Sync mode</label>
+                <select
+                  value={syncMode}
+                  onChange={(e) => setSyncMode(e.target.value as 'manual' | 'live')}
+                  className="settings-select"
+                >
+                  <option value="manual">On demand</option>
+                  <option value="live">Live (auto-sync on changes)</option>
+                </select>
               </div>
             </>
           ) : (

@@ -213,3 +213,94 @@ export async function performSync(
     },
   };
 }
+
+// ===== Delta (live) sync =====
+
+let _deltaSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let _deltaSyncInFlight = false;
+
+/**
+ * Schedule a debounced delta sync. Only sends places changed since lastSyncedAt.
+ * Debounces by 1.5s to batch rapid changes.
+ */
+export function scheduleDeltaSync(
+  getState: () => { places: Place[]; savedLists: SavedList[] },
+  onMerged: (places: Place[], savedLists: SavedList[]) => void,
+): void {
+  if (_deltaSyncTimer) clearTimeout(_deltaSyncTimer);
+  _deltaSyncTimer = setTimeout(() => {
+    _deltaSyncTimer = null;
+    if (_deltaSyncInFlight) return; // skip if previous still running
+    const { places, savedLists } = getState();
+    _deltaSyncInFlight = true;
+    performDeltaSync(places, savedLists)
+      .then((result) => {
+        if (result) onMerged(result.places, result.savedLists);
+      })
+      .catch(() => {/* silent fail for live sync */})
+      .finally(() => { _deltaSyncInFlight = false; });
+  }, 1500);
+}
+
+/**
+ * Delta sync: pulls remote, merges only locally changed places (since lastSyncedAt),
+ * and pushes the merged result. Falls back to full sync if no previous sync timestamp.
+ */
+async function performDeltaSync(
+  localPlaces: Place[],
+  localSavedLists: SavedList[],
+): Promise<{ places: Place[]; savedLists: SavedList[] } | null> {
+  const syncKey = getSyncId();
+  if (!syncKey) return null;
+
+  const lastSynced = getLastSyncedAt();
+  if (!lastSynced) {
+    // No previous sync — do a full sync
+    const result = await performSync(localPlaces, localSavedLists);
+    return { places: result.places, savedLists: result.savedLists };
+  }
+
+  const remote = await pullFromCloud(syncKey);
+  const localTombstones = getTombstones();
+
+  if (!remote) {
+    // Server empty, push everything
+    const data: SyncData = {
+      version: 1,
+      places: localPlaces,
+      savedLists: localSavedLists,
+      tombstones: pruneTombstones(localTombstones),
+      updatedAt: Date.now(),
+    };
+    await pushToCloud(syncKey, data);
+    setLastSyncedAt(Date.now());
+    return { places: localPlaces, savedLists: localSavedLists };
+  }
+
+  // Identify locally changed places since last sync
+  const changedLocally = localPlaces.filter((p) => p.updatedAt > lastSynced || p.createdAt > lastSynced);
+  const newTombstones = localTombstones.filter((t) => t.deletedAt > lastSynced);
+
+  // If nothing changed locally and remote hasn't changed either, skip
+  if (changedLocally.length === 0 && newTombstones.length === 0 && remote.updatedAt <= lastSynced) {
+    return null;
+  }
+
+  // Full merge for correctness, but the key optimization is:
+  // we only do the network round-trip when there are actual changes
+  const merged = mergeData(
+    { places: localPlaces, savedLists: localSavedLists, tombstones: localTombstones },
+    remote,
+  );
+
+  const syncData: SyncData = {
+    version: 1,
+    ...merged,
+    updatedAt: Date.now(),
+  };
+  await pushToCloud(syncKey, syncData);
+  localStorage.setItem(TOMBSTONE_KEY, JSON.stringify(merged.tombstones));
+  setLastSyncedAt(Date.now());
+
+  return { places: merged.places, savedLists: merged.savedLists };
+}

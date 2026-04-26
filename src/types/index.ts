@@ -65,4 +65,6 @@ export interface UserPrefs {
   theme: ThemeType;
   /** Number of days before visited flag auto-expires (default 30) */
   visitedExpiryDays: number;
+  /** Sync mode: 'manual' = on demand, 'live' = auto-sync on every change */
+  syncMode: 'manual' | 'live';
 }
