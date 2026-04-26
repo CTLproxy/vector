@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PlaceType } from '../types';
 import { useStore } from '../store';
+import { addPendingVisit } from '../lib/storage';
 import RatingInput from './RatingInput';
 
 export default function PlaceDetail() {
@@ -11,6 +12,8 @@ export default function PlaceDetail() {
   const deletePlace = useStore((s) => s.deletePlace);
   const setSelectedPlaceId = useStore((s) => s.setSelectedPlaceId);
   const favMode = useStore((s) => s.favMode);
+  const markVisited = useStore((s) => s.markVisited);
+  const clearVisited = useStore((s) => s.clearVisited);
 
   const place = places.find((p) => p.id === selectedPlaceId);
 
@@ -104,10 +107,32 @@ export default function PlaceDetail() {
               const list = savedLists.find((l) => l.id === place.sourceListId);
               return list ? <p className="source-list-badge">📋 {list.name}</p> : null;
             })()}
+            {place.visitedAt && (
+              <div className="visited-badge">
+                <span>✓ Visited {new Date(place.visitedAt).toLocaleDateString()}</span>
+                <button className="btn-clear-visited" onClick={() => clearVisited(place.id)}>
+                  Remove
+                </button>
+              </div>
+            )}
+            {place.skipped && (
+              <p className="skipped-badge">✕ Skipped</p>
+            )}
             <div className="form-actions">
               <button className="btn-danger" onClick={handleDelete}>Delete</button>
               <button className="btn-secondary" onClick={startEdit}>Edit</button>
-              <a className="btn-primary nav-link" href={navUrl} target="_blank" rel="noopener noreferrer">
+              {!place.visitedAt && (
+                <button className="btn-visited-sm" onClick={() => markVisited(place.id)}>
+                  ✓ Visited
+                </button>
+              )}
+              <a
+                className="btn-primary nav-link"
+                href={navUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => addPendingVisit(place.id, place.name)}
+              >
                 Navigate ↗
               </a>
             </div>

@@ -62,6 +62,16 @@ interface AppState {
   setIsAddingPlace: (v: boolean) => void;
   addingPosition: GeoPosition | null;
   setAddingPosition: (pos: GeoPosition | null) => void;
+
+  // Visited
+  markVisited: (id: string) => void;
+  markSkipped: (id: string) => void;
+  clearVisited: (id: string) => void;
+  expireVisitedPlaces: () => void;
+
+  // Visited expiry setting
+  visitedExpiryDays: number;
+  setVisitedExpiryDays: (v: number) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -198,4 +208,52 @@ export const useStore = create<AppState>((set, get) => ({
 
   addingPosition: null,
   setAddingPosition: (pos) => set({ addingPosition: pos }),
+
+  // Visited
+  markVisited: (id) => {
+    const next = get().places.map((p) =>
+      p.id === id ? { ...p, visitedAt: Date.now(), skipped: undefined, updatedAt: Date.now() } : p,
+    );
+    savePlaces(next);
+    set({ places: next });
+  },
+
+  markSkipped: (id) => {
+    const next = get().places.map((p) =>
+      p.id === id ? { ...p, skipped: true, visitedAt: undefined, updatedAt: Date.now() } : p,
+    );
+    savePlaces(next);
+    set({ places: next });
+  },
+
+  clearVisited: (id) => {
+    const next = get().places.map((p) =>
+      p.id === id ? { ...p, visitedAt: undefined, skipped: undefined, updatedAt: Date.now() } : p,
+    );
+    savePlaces(next);
+    set({ places: next });
+  },
+
+  expireVisitedPlaces: () => {
+    const expiryDays = get().visitedExpiryDays;
+    if (expiryDays <= 0) return;
+    const cutoff = Date.now() - expiryDays * 24 * 60 * 60 * 1000;
+    const places = get().places;
+    const hasExpired = places.some((p) => p.visitedAt && p.visitedAt < cutoff);
+    if (!hasExpired) return;
+    const next = places.map((p) =>
+      p.visitedAt && p.visitedAt < cutoff
+        ? { ...p, visitedAt: undefined, updatedAt: Date.now() }
+        : p,
+    );
+    savePlaces(next);
+    set({ places: next });
+  },
+
+  visitedExpiryDays: loadPrefs().visitedExpiryDays,
+  setVisitedExpiryDays: (v) => {
+    const prefs = { ...loadPrefs(), visitedExpiryDays: v };
+    savePrefs(prefs);
+    set({ visitedExpiryDays: v });
+  },
 }));

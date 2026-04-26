@@ -1,10 +1,11 @@
-import { Place, PlacesFile, SavedList, UserPrefs } from '../types';
+import { Place, PlacesFile, SavedList, UserPrefs, PendingVisit } from '../types';
 
 const STORAGE_KEY = 'vector_places';
 const LISTS_KEY = 'vector_saved_lists';
 const PREFS_KEY = 'vector_prefs';
+const PENDING_VISITS_KEY = 'vector_pending_visits';
 
-export const DEFAULT_PREFS: UserPrefs = { favMode: false, radiusKm: 5, theme: 'dark' };
+export const DEFAULT_PREFS: UserPrefs = { favMode: false, radiusKm: 5, theme: 'dark', visitedExpiryDays: 30 };
 
 export function loadPlaces(): Place[] {
   try {
@@ -48,6 +49,34 @@ export function loadPrefs(): UserPrefs {
 
 export function savePrefs(prefs: UserPrefs): void {
   localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+}
+
+export function loadPendingVisits(): PendingVisit[] {
+  try {
+    const raw = localStorage.getItem(PENDING_VISITS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function savePendingVisits(visits: PendingVisit[]): void {
+  localStorage.setItem(PENDING_VISITS_KEY, JSON.stringify(visits));
+}
+
+export function addPendingVisit(placeId: string, placeName: string): void {
+  const visits = loadPendingVisits();
+  if (!visits.some((v) => v.placeId === placeId)) {
+    visits.push({ placeId, placeName, navigatedAt: Date.now() });
+    savePendingVisits(visits);
+  }
+}
+
+export function removePendingVisit(placeId: string): void {
+  const visits = loadPendingVisits().filter((v) => v.placeId !== placeId);
+  savePendingVisits(visits);
 }
 
 export function exportToJson(places: Place[], savedLists?: SavedList[]): string {

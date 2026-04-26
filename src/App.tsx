@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import MapView from './components/MapView';
 import PlaceList from './components/PlaceList';
 import SortToggle from './components/SortToggle';
@@ -11,10 +11,13 @@ import SettingsPanel from './components/SettingsPanel';
 import ImportLinkModal from './components/ImportLinkModal';
 import SavedListsPanel from './components/SavedListsPanel';
 import ManagePlaces from './components/ManagePlaces';
+import VisitConfirmation from './components/VisitConfirmation';
 import { useStore } from './store';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useScoredPlaces } from './hooks/useScoredPlaces';
 import { getSyncId, performSync } from './lib/cloud-sync';
+import { loadPendingVisits, savePendingVisits } from './lib/storage';
+import { PendingVisit } from './types';
 
 const DECISION_COUNT = 5;
 
@@ -29,6 +32,30 @@ export default function App() {
   // Auto-sync on app start and when returning from background
   const setPlaces = useStore((s) => s.setPlaces);
   const setSavedLists = useStore((s) => s.setSavedLists);
+  const expireVisitedPlaces = useStore((s) => s.expireVisitedPlaces);
+
+  // Pending visits – show confirmation on app start
+  const [pendingVisits, setPendingVisits] = useState<PendingVisit[]>(() => loadPendingVisits());
+
+  const dismissPendingVisit = (placeId: string) => {
+    setPendingVisits((prev) => {
+      const next = prev.filter((v) => v.placeId !== placeId);
+      savePendingVisits(next);
+      return next;
+    });
+  };
+
+  const dismissAllPendingVisits = () => {
+    setPendingVisits([]);
+    savePendingVisits([]);
+  };
+
+  // Expire visited places on mount
+  useEffect(() => {
+    expireVisitedPlaces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const doSync = () => {
       const syncId = getSyncId();
@@ -54,6 +81,11 @@ export default function App() {
   }, []);
 
   const scored = useScoredPlaces();
+  // Exclude visited places from Decide and Roll
+  const unvisitedScored = useMemo(
+    () => scored.filter((s) => !s.place.visitedAt),
+    [scored],
+  );
   const isAddingPlace = useStore((s) => s.isAddingPlace);
   const setIsAddingPlace = useStore((s) => s.setIsAddingPlace);
   const selectedPlaceId = useStore((s) => s.selectedPlaceId);
@@ -90,7 +122,7 @@ export default function App() {
                 className="toolbar-btn"
                 onClick={() => setShowDecision(true)}
                 title="Decision mode"
-                disabled={scored.length === 0}
+                disabled={unvisitedScored.length === 0}
               >
                 🎯 <span className="toolbar-label">Decide</span>
               </button>
@@ -98,7 +130,7 @@ export default function App() {
                 className="toolbar-btn"
                 onClick={() => setShowRollDice(true)}
                 title="Roll dice"
-                disabled={scored.length === 0}
+                disabled={unvisitedScored.length === 0}
               >
                 🎲 <span className="toolbar-label">Roll</span>
               </button>
@@ -156,17 +188,24 @@ export default function App() {
       </div>
 
       {/* Modals */}
+      {pendingVisits.length > 0 && !showDecision && !showRollDice && !showSettings && (
+        <VisitConfirmation
+          pendingVisits={pendingVisits}
+          onDismiss={dismissPendingVisit}
+          onDone={dismissAllPendingVisits}
+        />
+      )}
       {addingPosition && <AddPlaceForm />}
       {selectedPlaceId && <PlaceDetail />}
       {showDecision && (
         <DecisionMode
-          candidates={scored.slice(0, DECISION_COUNT)}
+          candidates={unvisitedScored.slice(0, DECISION_COUNT)}
           onClose={() => setShowDecision(false)}
         />
       )}
-      {showRollDice && scored.length > 0 && (
+      {showRollDice && unvisitedScored.length > 0 && (
         <RollDice
-          candidates={scored}
+          candidates={unvisitedScored}
           onClose={() => setShowRollDice(false)}
         />
       )}
@@ -188,6 +227,15 @@ export default function App() {
           onAddPlace={() => setIsAddingPlace(true)}
           onImportLink={() => setShowImportLink(true)}
           onSettings={() => setShowSettings(true)}
+          onSync={async () => {
+            const syncId = getSyncId();
+            if (!syncId) return;
+            const places = useStore.getState().places;
+            const savedLists = useStore.getState().savedLists;
+            const { places: merged, savedLists: mergedLists } = await performSync(places, savedLists);
+            setPlaces(merged);
+            setSavedLists(mergedLists);
+          }}
         />
       )}
     </div>

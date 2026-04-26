@@ -1,5 +1,6 @@
 import { ScoredPlace } from '../lib/scoring';
 import { useStore } from '../store';
+import { addPendingVisit } from '../lib/storage';
 
 function formatDistance(km: number): string {
   if (km < 1) return `${Math.round(km * 1000)}m`;
@@ -50,11 +51,13 @@ function PlaceCard({ scored }: { scored: ScoredPlace }) {
   const sourceList = place.sourceListId ? savedLists.find((l) => l.id === place.sourceListId) : null;
 
   return (
-    <div className="place-card" onClick={() => setSelectedPlaceId(place.id)}>
+    <div className={`place-card ${place.visitedAt ? 'place-card-visited' : ''}`} onClick={() => setSelectedPlaceId(place.id)}>
       <div className="place-card-info">
         <div className="place-card-header">
           <span className="place-name">{place.name}</span>
           <span className={`place-type type-${place.type}`}>{place.type}</span>
+          {place.visitedAt && <span className="visited-tag">✓</span>}
+          {place.skipped && <span className="skipped-tag">✕</span>}
         </div>
         <div className="place-card-meta">
           <RatingDisplay placeId={place.id} rating={place.rating} />
@@ -74,7 +77,7 @@ function PlaceCard({ scored }: { scored: ScoredPlace }) {
         href={navUrl}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); addPendingVisit(place.id, place.name); }}
         title="Navigate"
       >
         ↗

@@ -15,6 +15,10 @@ export interface Place {
   sourceUrl?: string;
   /** ID of the SavedList this place was imported from (if any) */
   sourceListId?: string;
+  /** Timestamp when the place was marked as visited */
+  visitedAt?: number;
+  /** Whether the place was skipped during decision mode */
+  skipped?: boolean;
 }
 
 /** A tracked Google Maps saved list that can be re-synced */
@@ -47,9 +51,18 @@ export interface FilterState {
 
 export type ThemeType = 'dark' | 'light' | 'glass' | 'dark-glass' | 'light-glass';
 
+/** A place the user navigated to but hasn't confirmed visiting yet */
+export interface PendingVisit {
+  placeId: string;
+  placeName: string;
+  navigatedAt: number;
+}
+
 /** User preferences persisted to localStorage */
 export interface UserPrefs {
   favMode: boolean;
   radiusKm: number;
   theme: ThemeType;
+  /** Number of days before visited flag auto-expires (default 30) */
+  visitedExpiryDays: number;
 }

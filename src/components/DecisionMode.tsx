@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { ScoredPlace } from '../lib/scoring';
 import { useStore } from '../store';
+import { addPendingVisit } from '../lib/storage';
 
 function RatingBadge({ rating }: { rating: number }) {
   const favMode = useStore((s) => s.favMode);
@@ -24,6 +25,8 @@ export default function DecisionMode({ candidates, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
   const userPosition = useStore((s) => s.userPosition);
+  const markVisited = useStore((s) => s.markVisited);
+  const markSkipped = useStore((s) => s.markSkipped);
 
   const current = candidates[currentIndex];
 
@@ -60,6 +63,9 @@ export default function DecisionMode({ candidates, onClose }: Props) {
 
   if (accepted) {
     const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${accepted.place.lat},${accepted.place.lng}`;
+    const handleNavigate = () => {
+      addPendingVisit(accepted.place.id, accepted.place.name);
+    };
     return (
       <div className="decision-overlay">
         <div className="decision-result">
@@ -71,11 +77,22 @@ export default function DecisionMode({ candidates, onClose }: Props) {
             <p className="place-distance">{accepted.distance.toFixed(1)} km away</p>
           )}
           <div className="decision-actions">
-            <a className="btn-primary nav-link" href={navUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              className="btn-primary nav-link"
+              href={navUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleNavigate}
+            >
               Navigate ↗
             </a>
-            <button className="btn-secondary" onClick={onClose}>
-              Done
+          </div>
+          <div className="decision-actions visited-actions">
+            <button className="btn-visited" onClick={() => { markVisited(accepted.place.id); onClose(); }}>
+              ✓ Visited
+            </button>
+            <button className="btn-skipped" onClick={() => { markSkipped(accepted.place.id); onClose(); }}>
+              ✕ Skipped
             </button>
           </div>
         </div>

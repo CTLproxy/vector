@@ -27,6 +27,8 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const setRadiusKm = useStore((s) => s.setRadiusKm);
   const theme = useStore((s) => s.theme);
   const setTheme = useStore((s) => s.setTheme);
+  const visitedExpiryDays = useStore((s) => s.visitedExpiryDays);
+  const setVisitedExpiryDays = useStore((s) => s.setVisitedExpiryDays);
 
   // Non-linear radius: slider 0-100 maps to 0-50 km
   // 0-50 → 0-5 km (0.1 km precision), 50-75 → 5-10 km (0.5 km), 75-100 → 10-50 km
@@ -215,6 +217,26 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
             />
             <span className="radius-value">
               {formatRadius(radiusKm)}
+            </span>
+          </div>
+        </section>
+
+        <section>
+          <h4>Visited Expiry</h4>
+          <p className="settings-hint">
+            Automatically remove the "Visited" flag after this many days. Set to 0 to keep forever.
+          </p>
+          <div className="settings-row radius-row">
+            <input
+              type="range"
+              min="0"
+              max="365"
+              step="1"
+              value={visitedExpiryDays}
+              onChange={(e) => setVisitedExpiryDays(Number(e.target.value))}
+            />
+            <span className="radius-value">
+              {visitedExpiryDays === 0 ? 'Never' : `${visitedExpiryDays} days`}
             </span>
           </div>
         </section>

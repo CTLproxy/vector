@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Place, PlaceType } from '../types';
 import { useStore } from '../store';
 import { haversineKm } from '../lib/scoring';
+import { getSyncId } from '../lib/cloud-sync';
 import RatingInput from './RatingInput';
 
 type SortKey = 'name' | 'type' | 'rating' | 'created';
@@ -72,13 +73,17 @@ interface Props {
   onAddPlace: () => void;
   onImportLink: () => void;
   onSettings: () => void;
+  onSync?: () => Promise<void>;
 }
 
-export default function ManagePlaces({ onClose, onAddPlace, onImportLink, onSettings }: Props) {
+export default function ManagePlaces({ onClose, onAddPlace, onImportLink, onSettings, onSync }: Props) {
   const places = useStore((s) => s.places);
   const updatePlace = useStore((s) => s.updatePlace);
   const deletePlace = useStore((s) => s.deletePlace);
   const favMode = useStore((s) => s.favMode);
+  const hasSyncKey = !!getSyncId();
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState('');
 
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');
@@ -241,6 +246,28 @@ export default function ManagePlaces({ onClose, onAddPlace, onImportLink, onSett
         <div className="manage-header">
           <h3>Manage Places</h3>
           <div className="manage-header-actions">
+            {hasSyncKey && onSync && (
+              <button
+                className="toolbar-btn"
+                onClick={async () => {
+                  setSyncing(true);
+                  setSyncStatus('');
+                  try {
+                    await onSync();
+                    setSyncStatus('Synced!');
+                  } catch {
+                    setSyncStatus('Sync failed');
+                  } finally {
+                    setSyncing(false);
+                    setTimeout(() => setSyncStatus(''), 3000);
+                  }
+                }}
+                title="Sync now"
+                disabled={syncing}
+              >
+                {syncing ? '⏳' : '↻'} <span className="toolbar-label">{syncing ? 'Syncing…' : 'Sync'}</span>
+              </button>
+            )}
             <button className="toolbar-btn" onClick={() => { onClose(); onAddPlace(); }} title="Add place">
               ＋ <span className="toolbar-label">Add</span>
             </button>
@@ -255,6 +282,7 @@ export default function ManagePlaces({ onClose, onAddPlace, onImportLink, onSett
         </div>
 
         {/* Search */}
+        {syncStatus && <p className="sync-status manage-sync-status">{syncStatus}</p>}
         <input
           className="manage-search"
           type="text"
