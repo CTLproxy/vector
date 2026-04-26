@@ -1,6 +1,6 @@
 import { Place, SavedList } from '../types';
 
-const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob';
+const SYNC_API = '/api/sync';
 const SYNC_KEY = 'vector_sync_id';
 const SYNC_TS_KEY = 'vector_last_synced';
 const TOMBSTONE_KEY = 'vector_tombstones';
@@ -63,57 +63,40 @@ function pruneTombstones(tombstones: { id: string; deletedAt: number }[]): { id:
   return tombstones.filter((t) => t.deletedAt > cutoff);
 }
 
-/** Create a new cloud sync blob, returns the blob ID */
-export async function createSyncBlob(places: Place[], savedLists: SavedList[]): Promise<string> {
-  const data: SyncData = {
-    version: 1,
-    places,
-    savedLists,
-    tombstones: pruneTombstones(getTombstones()),
-    updatedAt: Date.now(),
-  };
-
-  const response = await fetch(JSONBLOB_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+/** Validate a sync key against the server, returns true if valid */
+export async function validateSyncKey(key: string): Promise<boolean> {
+  const response = await fetch(`${SYNC_API}?key=${encodeURIComponent(key)}`, {
+    method: 'GET',
   });
+  if (response.status === 403) return false;
+  if (!response.ok) throw new Error(`Validation failed (${response.status})`);
+  return true;
+}
 
-  if (!response.ok) {
-    throw new Error(`Failed to create sync blob (${response.status})`);
-  }
-
-  // The blob ID is the last segment of the Location header URL
-  const location = response.headers.get('Location');
-  if (!location) {
-    throw new Error('No Location header returned from jsonblob');
-  }
-  const blobId = location.split('/').pop()!;
-  setSyncId(blobId);
-  setLastSyncedAt(Date.now());
-  return blobId;
+/** Connect a sync key (validates it first) */
+export async function connectSyncKey(key: string): Promise<void> {
+  const valid = await validateSyncKey(key);
+  if (!valid) throw new Error('Invalid or revoked sync key');
+  setSyncId(key);
 }
 
 /** Pull data from cloud */
-async function pullFromCloud(blobId: string): Promise<SyncData | null> {
-  const response = await fetch(`${JSONBLOB_API}/${blobId}`);
-  if (response.status === 404) return null;
-  if (!response.ok) {
-    throw new Error(`Failed to pull sync data (${response.status})`);
-  }
+async function pullFromCloud(syncKey: string): Promise<SyncData | null> {
+  const response = await fetch(`${SYNC_API}?key=${encodeURIComponent(syncKey)}`);
+  if (response.status === 403) throw new Error('Invalid or revoked sync key');
+  if (!response.ok) throw new Error(`Failed to pull sync data (${response.status})`);
   return response.json();
 }
 
 /** Push data to cloud */
-async function pushToCloud(blobId: string, data: SyncData): Promise<void> {
-  const response = await fetch(`${JSONBLOB_API}/${blobId}`, {
+async function pushToCloud(syncKey: string, data: SyncData): Promise<void> {
+  const response = await fetch(`${SYNC_API}?key=${encodeURIComponent(syncKey)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`Failed to push sync data (${response.status})`);
-  }
+  if (response.status === 403) throw new Error('Invalid or revoked sync key');
+  if (!response.ok) throw new Error(`Failed to push sync data (${response.status})`);
 }
 
 /** Merge local and remote data. Returns merged places and savedLists. */
@@ -178,14 +161,14 @@ export async function performSync(
   localPlaces: Place[],
   localSavedLists: SavedList[],
 ): Promise<{ places: Place[]; savedLists: SavedList[]; result: SyncResult }> {
-  const blobId = getSyncId();
-  if (!blobId) throw new Error('No sync key configured');
+  const syncKey = getSyncId();
+  if (!syncKey) throw new Error('No sync key configured');
 
-  const remote = await pullFromCloud(blobId);
+  const remote = await pullFromCloud(syncKey);
   const localTombstones = getTombstones();
 
   if (!remote) {
-    // Blob was deleted or expired — push current state
+    // No data on server yet — push current state
     const data: SyncData = {
       version: 1,
       places: localPlaces,
@@ -193,7 +176,7 @@ export async function performSync(
       tombstones: pruneTombstones(localTombstones),
       updatedAt: Date.now(),
     };
-    await pushToCloud(blobId, data);
+    await pushToCloud(syncKey, data);
     setLastSyncedAt(Date.now());
     return {
       places: localPlaces,
@@ -213,7 +196,7 @@ export async function performSync(
     ...merged,
     updatedAt: Date.now(),
   };
-  await pushToCloud(blobId, syncData);
+  await pushToCloud(syncKey, syncData);
 
   // Update local tombstones
   localStorage.setItem(TOMBSTONE_KEY, JSON.stringify(merged.tombstones));

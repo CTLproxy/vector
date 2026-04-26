@@ -5,10 +5,9 @@ import { getCorsProxy, setCorsProxy } from '../lib/cors-proxy';
 import { ThemeType } from '../types';
 import {
   getSyncId,
-  setSyncId,
   clearSyncId,
   getLastSyncedAt,
-  createSyncBlob,
+  connectSyncKey,
   performSync,
 } from '../lib/cloud-sync';
 
@@ -108,27 +107,21 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
     }
   };
 
-  const handleCreateSyncKey = async () => {
+  const handleConnectSyncKey = async () => {
+    const key = syncKeyInput.trim();
+    if (!key) return;
     setSyncing(true);
     setSyncStatus('');
     try {
-      const blobId = await createSyncBlob(places, savedLists);
-      setCloudSyncId(blobId);
-      setSyncStatus(`Sync key created! Share this key with your other devices: ${blobId}`);
+      await connectSyncKey(key);
+      setCloudSyncId(key);
+      setSyncKeyInput('');
+      setSyncStatus('Sync key connected! Tap "Sync Now" to pull data.');
     } catch (err) {
       setSyncStatus(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setSyncing(false);
     }
-  };
-
-  const handleConnectSyncKey = () => {
-    const key = syncKeyInput.trim();
-    if (!key) return;
-    setSyncId(key);
-    setCloudSyncId(key);
-    setSyncKeyInput('');
-    setSyncStatus('Sync key saved. Tap "Sync Now" to pull data.');
   };
 
   const handleCloudSync = async () => {
@@ -274,22 +267,17 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
           ) : (
             <>
               <p className="settings-hint">
-                Create a sync key to sync between devices automatically. Or enter a key from another device.
+                Enter a sync key provided by the admin to sync between devices.
               </p>
-              <div className="settings-row">
-                <button className="btn-primary" onClick={handleCreateSyncKey} disabled={syncing}>
-                  {syncing ? 'Creating…' : 'Create Sync Key'}
-                </button>
-              </div>
               <div className="settings-row" style={{ flexDirection: 'column', gap: '6px' }}>
                 <input
                   type="text"
                   value={syncKeyInput}
                   onChange={(e) => setSyncKeyInput(e.target.value)}
-                  placeholder="Paste sync key from another device"
+                  placeholder="Paste sync key"
                 />
-                <button className="btn-secondary" onClick={handleConnectSyncKey} disabled={!syncKeyInput.trim()}>
-                  Connect
+                <button className="btn-primary" onClick={handleConnectSyncKey} disabled={!syncKeyInput.trim() || syncing}>
+                  {syncing ? 'Validating…' : 'Connect'}
                 </button>
               </div>
             </>
