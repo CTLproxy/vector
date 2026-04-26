@@ -1,5 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { redis, KEYS_SET, KEY_META_PREFIX, SYNC_PREFIX } from '../lib/redis';
+import { Redis } from '@upstash/redis';
+
+const redis = new Redis({
+  url: process.env.UPR_KV_REST_API_URL!,
+  token: process.env.UPR_KV_REST_API_TOKEN!,
+});
+
+const KEYS_SET = 'sync_keys';
+const KEY_META_PREFIX = 'keymeta:';
+const SYNC_PREFIX = 'sync:';
 
 /**
  * Admin endpoint for managing sync keys.
