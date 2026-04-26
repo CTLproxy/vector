@@ -99,6 +99,15 @@ async function pushToCloud(syncKey: string, data: SyncData): Promise<void> {
   if (!response.ok) throw new Error(`Failed to push sync data (${response.status})`);
 }
 
+/** Check remote updatedAt timestamp via HEAD (returns 0 if no data). Minimal traffic. */
+async function checkRemoteTimestamp(syncKey: string): Promise<number> {
+  const response = await fetch(`${SYNC_API}?key=${encodeURIComponent(syncKey)}`, {
+    method: 'HEAD',
+  });
+  if (!response.ok) return 0;
+  return Number(response.headers.get('X-Updated-At') || '0');
+}
+
 /** Merge local and remote data. Returns merged places and savedLists. */
 function mergeData(
   local: { places: Place[]; savedLists: SavedList[]; tombstones: { id: string; deletedAt: number }[] },
@@ -240,6 +249,43 @@ export function scheduleDeltaSync(
       .catch(() => {/* silent fail for live sync */})
       .finally(() => { _deltaSyncInFlight = false; });
   }, 1500);
+}
+
+/**
+ * Pull remote changes without pushing local state.
+ * Uses a lightweight HEAD request first to check if remote has changed (minimal traffic).
+ * Only does the full GET pull if the remote timestamp is newer than lastSyncedAt.
+ */
+export async function pullRemoteChanges(
+  localPlaces: Place[],
+  localSavedLists: SavedList[],
+): Promise<{ places: Place[]; savedLists: SavedList[] } | null> {
+  if (_deltaSyncInFlight) return null;
+  const syncKey = getSyncId();
+  if (!syncKey) return null;
+
+  const lastSynced = getLastSyncedAt();
+  if (!lastSynced) return null; // need at least one full sync first
+
+  // Lightweight check — HEAD request returns only the timestamp header (~200 bytes)
+  const remoteTs = await checkRemoteTimestamp(syncKey);
+  if (remoteTs <= lastSynced) return null; // nothing new, skip full pull
+
+  // Remote has newer data — do the full pull + merge
+  const remote = await pullFromCloud(syncKey);
+  if (!remote) return null;
+
+  const localTombstones = getTombstones();
+  const merged = mergeData(
+    { places: localPlaces, savedLists: localSavedLists, tombstones: localTombstones },
+    remote,
+  );
+
+  // Only update lastSyncedAt — don't push back (read-only pull)
+  localStorage.setItem(TOMBSTONE_KEY, JSON.stringify(merged.tombstones));
+  setLastSyncedAt(Date.now());
+
+  return { places: merged.places, savedLists: merged.savedLists };
 }
 
 /**

@@ -15,9 +15,9 @@ import VisitConfirmation from './components/VisitConfirmation';
 import { useStore } from './store';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useScoredPlaces } from './hooks/useScoredPlaces';
-import { getSyncId, performSync, scheduleDeltaSync } from './lib/cloud-sync';
+import { getSyncId, performSync, scheduleDeltaSync, pullRemoteChanges } from './lib/cloud-sync';
 import { loadPendingVisits, savePendingVisits } from './lib/storage';
-import { PendingVisit } from './types';
+import { PendingVisit, Place, SavedList } from './types';
 
 const DECISION_COUNT = 5;
 
@@ -85,9 +85,24 @@ export default function App() {
   const prevPlacesRef = useRef(useStore.getState().places);
   const prevListsRef = useRef(useStore.getState().savedLists);
 
+  // Callback to apply merged data from sync
+  const applyMerged = (mergedPlaces: Place[], mergedLists: SavedList[]) => {
+    const current = useStore.getState();
+    // Compare by serialized content, not just length — updates (e.g. visited flag) don't change length
+    if (JSON.stringify(mergedPlaces) !== JSON.stringify(current.places)) {
+      prevPlacesRef.current = mergedPlaces; // prevent re-triggering sync
+      setPlaces(mergedPlaces);
+    }
+    if (JSON.stringify(mergedLists) !== JSON.stringify(current.savedLists)) {
+      prevListsRef.current = mergedLists;
+      setSavedLists(mergedLists);
+    }
+  };
+
   useEffect(() => {
     if (syncMode !== 'live' || !getSyncId()) return;
 
+    // Auto-push on local changes
     const unsub = useStore.subscribe((state) => {
       const placesChanged = state.places !== prevPlacesRef.current;
       const listsChanged = state.savedLists !== prevListsRef.current;
@@ -97,21 +112,24 @@ export default function App() {
       if (placesChanged || listsChanged) {
         scheduleDeltaSync(
           () => ({ places: state.places, savedLists: state.savedLists }),
-          (mergedPlaces, mergedLists) => {
-            // Only update if remote had new data
-            const current = useStore.getState();
-            if (mergedPlaces.length !== current.places.length) {
-              setPlaces(mergedPlaces);
-            }
-            if (mergedLists.length !== current.savedLists.length) {
-              setSavedLists(mergedLists);
-            }
-          },
+          applyMerged,
         );
       }
     });
 
-    return unsub;
+    // Periodic pull for remote changes (every 30s)
+    const pullInterval = setInterval(() => {
+      const { places: p, savedLists: sl } = useStore.getState();
+      pullRemoteChanges(p, sl)
+        .then((result) => { if (result) applyMerged(result.places, result.savedLists); })
+        .catch(() => {/* silent */});
+    }, 30_000);
+
+    return () => {
+      unsub();
+      clearInterval(pullInterval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syncMode, setPlaces, setSavedLists]);
 
   const scored = useScoredPlaces();

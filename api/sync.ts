@@ -27,14 +27,15 @@ async function isValidKey(key: string): Promise<boolean> {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers for the PWA
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, HEAD, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Expose-Headers', 'X-Updated-At');
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
 
-  if (req.method !== 'GET' && req.method !== 'PUT') {
+  if (req.method !== 'GET' && req.method !== 'PUT' && req.method !== 'HEAD') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -49,6 +50,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const redisKey = `${SYNC_PREFIX}${key}`;
+
+  // HEAD — return only the updatedAt timestamp (no body, minimal traffic)
+  if (req.method === 'HEAD') {
+    const data = await redis.get<{ updatedAt?: number }>(redisKey);
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Updated-At', String(data?.updatedAt ?? 0));
+    return res.status(200).end();
+  }
 
   if (req.method === 'GET') {
     const data = await redis.get(redisKey);
