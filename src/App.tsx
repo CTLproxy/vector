@@ -26,20 +26,30 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // Auto-sync on app start
+  // Auto-sync on app start and when returning from background
   const setPlaces = useStore((s) => s.setPlaces);
   const setSavedLists = useStore((s) => s.setSavedLists);
   useEffect(() => {
-    const syncId = getSyncId();
-    if (!syncId) return;
-    const places = useStore.getState().places;
-    const savedLists = useStore.getState().savedLists;
-    performSync(places, savedLists)
-      .then(({ places: merged, savedLists: mergedLists }) => {
-        setPlaces(merged);
-        setSavedLists(mergedLists);
-      })
-      .catch(() => {/* silent fail on auto-sync */});
+    const doSync = () => {
+      const syncId = getSyncId();
+      if (!syncId) return;
+      const places = useStore.getState().places;
+      const savedLists = useStore.getState().savedLists;
+      performSync(places, savedLists)
+        .then(({ places: merged, savedLists: mergedLists }) => {
+          setPlaces(merged);
+          setSavedLists(mergedLists);
+        })
+        .catch(() => {/* silent fail on auto-sync */});
+    };
+
+    doSync();
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') doSync();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
