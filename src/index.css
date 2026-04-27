@@ -15,10 +15,12 @@
   --accent-light: #5a7cff;
   --text: #e8e8f0;
   --text-dim: #8888a0;
+  --text-accent: #ffffff;
   --danger: #e74c5e;
   --green: #2ecc71;
   --orange: #f39c12;
   --radius: 12px;
+  --radius-lg: 48px;
   --radius-sm: 8px;
   --glass-blur: 0px;
   --glass-bg: transparent;
@@ -42,6 +44,7 @@
   --accent-light: #4a6cf7;
   --text: #1a1a2e;
   --text-dim: #6b7280;
+  --text-accent: #e8eaed;
   --danger: #dc3545;
   --green: #22c55e;
   --orange: #f59e0b;
@@ -79,6 +82,7 @@
   --accent-light: #99aaff;
   --text: #f0f0ff;
   --text-dim: #a0a0c8;
+  --text-accent: #ffffff;
   --danger: #ff6b7a;
   --green: #5aeaa0;
   --orange: #ffb347;
@@ -94,6 +98,7 @@
   --accent-light: #8899ff;
   --text: #e0e0f8;
   --text-dim: #8888b0;
+  --text-accent: #ffffff;
   --danger: #ff5a6a;
   --green: #4ade80;
   --orange: #ffa533;
@@ -110,6 +115,7 @@
   --accent-light: #5a7cff;
   --text: #1a1a2e;
   --text-dim: #555570;
+  --text-accent: #1a1a2e;
   --danger: #dc3545;
   --green: #22c55e;
   --orange: #f59e0b;
@@ -134,15 +140,14 @@
   border-bottom: 1px solid var(--glass-border);
 }
 
-[data-theme="glass"] .toolbar-group,
-[data-theme="dark-glass"] .toolbar-group {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--glass-border);
-}
 
-[data-theme="light-glass"] .toolbar-group {
-  background: rgba(255, 255, 255, 0.30);
+[data-theme="light-glass"] .sort-toggle,
+[data-theme="glass"] .sort-toggle,
+[data-theme="dark-glass"] .sort-toggle {
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 2px;
 }
 
 [data-theme="glass"] .toolbar-btn:hover,
@@ -325,24 +330,21 @@
 }
 
 /* ── Glass: Chips ── */
-[data-theme="glass"] .sort-btn,
-[data-theme="glass"] .filter-chip,
-[data-theme="glass"] .theme-btn,
-[data-theme="dark-glass"] .sort-btn,
-[data-theme="dark-glass"] .filter-chip,
-[data-theme="dark-glass"] .theme-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-}
 
 [data-theme="light-glass"] .sort-btn,
-[data-theme="light-glass"] .filter-chip,
-[data-theme="light-glass"] .theme-btn {
-  background: rgba(255, 255, 255, 0.35);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
+[data-theme="glass"] .sort-btn,
+[data-theme="dark-glass"] .sort-btn,
+[data-theme="light-glass"] .sort-btn:first-child,
+[data-theme="light-glass"] .sort-btn:last-child,
+[data-theme="glass"] .sort-btn:first-child,
+[data-theme="glass"] .sort-btn:last-child,
+[data-theme="dark-glass"] .sort-btn:first-child,
+[data-theme="dark-glass"] .sort-btn:last-child {
+  background: transparent;
+  border-radius: var(--radius-lg);
+  padding: 4px 12px;
 }
+
 
 [data-theme="glass"] .sort-btn.active,
 [data-theme="glass"] .filter-chip.active,
@@ -350,8 +352,9 @@
 [data-theme="dark-glass"] .filter-chip.active,
 [data-theme="light-glass"] .sort-btn.active,
 [data-theme="light-glass"] .filter-chip.active {
-  background: var(--accent);
-  border-color: var(--accent);
+  /*background: var(--accent);*/
+  background: rgba(255, 255, 255, 0.2);
+  /*border-color: var(--accent);*/
 }
 
 /* ── Glass: Map controls ── */
@@ -493,15 +496,35 @@
 }
 
 /* ── Glass: Theme button active state ── */
+
+[data-theme="light-glass"] .theme-row,
+[data-theme="glass"] .theme-row,
+[data-theme="dark-glass"] .theme-row {
+  background: rgba(255, 255, 255, 0.30);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 4px 0px;
+}
+
+[data-theme="light-glass"] .theme-btn,
+[data-theme="glass"] .theme-btn,
+[data-theme="dark-glass"] .theme-btn {
+  background: transparent;
+}
+
 [data-theme="glass"] .theme-btn.active,
 [data-theme="dark-glass"] .theme-btn.active {
-  border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius);
+  margin: 0px 4px;
 }
 
 [data-theme="light-glass"] .theme-btn.active {
-  border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.55);
+  border: 0;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius);
+  margin: 0px 4px;
 }
 
 body {
@@ -711,7 +734,7 @@ button:active {
 }
 
 .toolbar-left {
-  flex-shrink: 0;
+  flex-shrink: 1;
 }
 
 .toolbar-right {
@@ -725,8 +748,6 @@ button:active {
 .toolbar-group {
   display: flex;
   gap: 2px;
-  background: var(--surface2);
-  border-radius: var(--radius-sm);
   padding: 2px;
 }
 
@@ -736,9 +757,8 @@ button:active {
   gap: 4px;
   background: transparent;
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   padding: 6px 4px;
-  border-radius: calc(var(--radius-sm) - 2px);
   white-space: nowrap;
   min-height: 36px;
 }
@@ -810,26 +830,38 @@ button:active {
 .manage-header-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 
 .toolbar-label {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   color: var(--text-dim);
 }
 
 /* ===== Sort Toggle ===== */
 .sort-toggle {
   display: flex;
-  gap: 4px;
+  gap: 0px;
 }
 
 .sort-btn {
   background: var(--surface2);
   color: var(--text-dim);
   font-size: 0.8rem;
-  padding: 4px 10px;
-  border-radius: 16px;
+  padding: 4px 6px;
+  border-radius: 0px;
+}
+
+.sort-btn:first-child {
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+  padding-left: 10px;
+}
+
+.sort-btn:last-child {
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+  padding-right: 10px;
 }
 
 .sort-btn.active {
@@ -1154,6 +1186,7 @@ button:active {
 .settings-hint {
   font-size: 0.8rem;
   color: var(--text-dim);
+  padding-left: 26px;
 }
 
 .settings-meta {
@@ -1189,14 +1222,15 @@ button:active {
 
 .theme-row {
   display: flex;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 0px;
+  margin-top: 8px;
 }
 
 .theme-btn {
   flex: 1;
   padding: 8px 4px;
-  border-radius: var(--radius-sm);
+  /*border-radius: var(--radius-sm);*/
+  border-radius: 0px;
   background: var(--surface2);
   color: var(--text-dim);
   font-size: 0.85rem;
@@ -1205,10 +1239,20 @@ button:active {
   transition: all 0.15s;
 }
 
+.theme-btn:first-child {
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.theme-btn:last-child {
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
 .theme-btn.active {
   border-color: var(--accent);
-  color: var(--text);
-  background: var(--surface);
+  color: var(--text-accent);
+  background: var(--accent-light);
 }
 
 /* ===== Decision Mode ===== */
@@ -1367,7 +1411,7 @@ button:active {
   z-index: 3000;
   display: flex;
   flex-direction: column;
-  padding-left: 5%;
+  padding-left: 0;
 }
 
 .manage-panel {
@@ -1406,7 +1450,7 @@ button:active {
 
 .manage-sort {
   display: flex;
-  gap: 4px;
+  gap: 0px;
 }
 
 .manage-filters {

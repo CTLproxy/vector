@@ -275,7 +275,7 @@ export default function ManagePlaces({ onClose, onAddPlace, onImportLink, onSett
               📎 <span className="toolbar-label">Import</span>
             </button>
             <button className="toolbar-btn" onClick={() => { onClose(); onSettings(); }} title="Settings">
-              ⚙
+              ⚙️ <span className="toolbar-label">Settings</span>
             </button>
             <button className="btn-close" onClick={onClose}>✕</button>
           </div>

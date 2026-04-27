@@ -176,7 +176,7 @@ export default function App() {
                 title="Decision mode"
                 disabled={unvisitedScored.length === 0}
               >
-                🎯 <span className="toolbar-label">Decide</span>
+                💎 <span className="toolbar-label">Decide</span>
               </button>
               <button
                 className="toolbar-btn"
@@ -220,7 +220,7 @@ export default function App() {
                       className="toolbar-dropdown-item"
                       onClick={() => { setShowSettings(true); setShowMore(false); }}
                     >
-                      ⚙ Settings
+                      ⚙️ Settings
                     </button>
                   </div>
                 </>

@@ -3,7 +3,7 @@ import { useStore } from '../store';
 
 const MODES: { value: SortMode; label: string }[] = [
   { value: 'smart', label: '✦ Smart' },
-  { value: 'distance', label: '📍 Distance' },
+  { value: 'distance', label: '⛖ Distance' },
   { value: 'rating', label: '★ Rating' },
 ];
 
