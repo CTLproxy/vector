@@ -44,6 +44,7 @@ function RatingDisplay({ placeId, rating }: { placeId: string; rating: number })
 function PlaceCard({ scored }: { scored: ScoredPlace }) {
   const { place, distance } = scored;
   const setSelectedPlaceId = useStore((s) => s.setSelectedPlaceId);
+  const setFocusedPlaceId = useStore((s) => s.setFocusedPlaceId);
   const userPosition = useStore((s) => s.userPosition);
   const savedLists = useStore((s) => s.savedLists);
 
@@ -51,7 +52,7 @@ function PlaceCard({ scored }: { scored: ScoredPlace }) {
   const sourceList = place.sourceListId ? savedLists.find((l) => l.id === place.sourceListId) : null;
 
   return (
-    <div className={`place-card ${place.visitedAt ? 'place-card-visited' : ''}`} onClick={() => setSelectedPlaceId(place.id)}>
+    <div className={`place-card ${place.visitedAt ? 'place-card-visited' : ''}`} onClick={() => setFocusedPlaceId(place.id)}>
       <div className="place-card-info">
         <div className="place-card-header">
           <span className="place-name">{place.name}</span>
@@ -62,6 +63,12 @@ function PlaceCard({ scored }: { scored: ScoredPlace }) {
         <div className="place-card-meta">
           <RatingDisplay placeId={place.id} rating={place.rating} />
           {userPosition && <span className="place-distance">{formatDistance(distance)}</span>}
+          <button
+            className="details-link"
+            onClick={(e) => { e.stopPropagation(); setSelectedPlaceId(place.id); }}
+          >
+            Details
+          </button>
         </div>
         {place.tags.length > 0 && (
           <div className="place-tags">

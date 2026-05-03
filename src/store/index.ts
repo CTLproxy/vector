@@ -58,6 +58,8 @@ interface AppState {
   // UI
   selectedPlaceId: string | null;
   setSelectedPlaceId: (id: string | null) => void;
+  focusedPlaceId: string | null;
+  setFocusedPlaceId: (id: string | null) => void;
   isAddingPlace: boolean;
   setIsAddingPlace: (v: boolean) => void;
   addingPosition: GeoPosition | null;
@@ -208,10 +210,17 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   mapCenter: null,
-  setMapCenter: (pos) => set({ mapCenter: pos }),
+  setMapCenter: (pos) => {
+    const current = get().mapCenter;
+    if (current && current.lat === pos.lat && current.lng === pos.lng) return;
+    set({ mapCenter: pos });
+  },
 
   selectedPlaceId: null,
   setSelectedPlaceId: (id) => set({ selectedPlaceId: id }),
+
+  focusedPlaceId: null,
+  setFocusedPlaceId: (id) => set({ focusedPlaceId: id }),
 
   isAddingPlace: false,
   setIsAddingPlace: (v) => set({ isAddingPlace: v }),

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useStore } from '../store';
@@ -172,10 +172,31 @@ function SearchBox({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> })
 export default function MapView() {
   const userPosition = useStore((s) => s.userPosition);
   const setSelectedPlaceId = useStore((s) => s.setSelectedPlaceId);
+  const focusedPlaceId = useStore((s) => s.focusedPlaceId);
+  const setFocusedPlaceId = useStore((s) => s.setFocusedPlaceId);
   const isAddingPlace = useStore((s) => s.isAddingPlace);
   const addingPosition = useStore((s) => s.addingPosition);
   const scored = useScoredPlaces();
   const mapRef = useRef<L.Map | null>(null);
+  const markerRefs = useRef<Record<string, L.Marker>>({});
+
+  // Fly to focused place and open its popup
+  useEffect(() => {
+    if (!focusedPlaceId) return;
+    const place = scored.find((s) => s.place.id === focusedPlaceId)?.place;
+    if (!place) return;
+    const map = mapRef.current;
+    if (map) {
+      map.flyTo([place.lat, place.lng], Math.max(map.getZoom(), 14), { duration: 0.6 });
+    }
+    // Open popup after fly animation settles
+    setTimeout(() => {
+      const marker = markerRefs.current[focusedPlaceId];
+      if (marker) marker.openPopup();
+    }, 650);
+    // Clear focused so clicking the same card again works
+    setFocusedPlaceId(null);
+  }, [focusedPlaceId, scored, setFocusedPlaceId]);
 
   const center: [number, number] = userPosition
     ? [userPosition.lat, userPosition.lng]
@@ -207,6 +228,10 @@ export default function MapView() {
         <Marker
           key={place.id}
           position={[place.lat, place.lng]}
+          ref={(ref) => {
+            if (ref) markerRefs.current[place.id] = ref;
+            else delete markerRefs.current[place.id];
+          }}
         >
           <Popup>
             <div
