@@ -1,4 +1,5 @@
 import { Place, SavedList } from '../types';
+import { isNetworkAvailable } from './network';
 
 const SYNC_API = '/api/sync';
 const SYNC_KEY = 'vector_sync_id';
@@ -65,6 +66,7 @@ function pruneTombstones(tombstones: { id: string; deletedAt: number }[]): { id:
 
 /** Validate a sync key against the server, returns true if valid */
 export async function validateSyncKey(key: string): Promise<boolean> {
+  if (!isNetworkAvailable()) throw new Error('No network connection');
   const response = await fetch(`${SYNC_API}?key=${encodeURIComponent(key)}`, {
     method: 'GET',
   });
@@ -75,6 +77,7 @@ export async function validateSyncKey(key: string): Promise<boolean> {
 
 /** Connect a sync key (validates it first) */
 export async function connectSyncKey(key: string): Promise<void> {
+  if (!isNetworkAvailable()) throw new Error('Cannot connect while offline');
   const valid = await validateSyncKey(key);
   if (!valid) throw new Error('Invalid or revoked sync key');
   setSyncId(key);
@@ -170,6 +173,9 @@ export async function performSync(
   localPlaces: Place[],
   localSavedLists: SavedList[],
 ): Promise<{ places: Place[]; savedLists: SavedList[]; result: SyncResult }> {
+  if (!isNetworkAvailable()) {
+    return { places: localPlaces, savedLists: localSavedLists, result: { pulled: 0, pushed: 0, merged: localPlaces.length } };
+  }
   const syncKey = getSyncId();
   if (!syncKey) throw new Error('No sync key configured');
 
@@ -260,6 +266,7 @@ export async function pullRemoteChanges(
   localPlaces: Place[],
   localSavedLists: SavedList[],
 ): Promise<{ places: Place[]; savedLists: SavedList[] } | null> {
+  if (!isNetworkAvailable()) return null;
   if (_deltaSyncInFlight) return null;
   const syncKey = getSyncId();
   if (!syncKey) return null;

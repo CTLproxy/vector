@@ -76,6 +76,12 @@ interface AppState {
   // Sync mode
   syncMode: 'manual' | 'live';
   setSyncMode: (v: 'manual' | 'live') => void;
+
+  // Offline mode
+  offlineMode: boolean;
+  setOfflineMode: (v: boolean) => void;
+  isOnline: boolean;
+  setIsOnline: (v: boolean) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -267,4 +273,14 @@ export const useStore = create<AppState>((set, get) => ({
     savePrefs(prefs);
     set({ syncMode: v });
   },
+
+  offlineMode: loadPrefs().offlineMode,
+  setOfflineMode: (v) => {
+    const prefs = { ...loadPrefs(), offlineMode: v };
+    savePrefs(prefs);
+    set({ offlineMode: v });
+  },
+
+  isOnline: navigator.onLine,
+  setIsOnline: (v) => set({ isOnline: v }),
 }));

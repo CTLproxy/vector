@@ -345,15 +345,23 @@
   padding: 4px 12px;
 }
 
-
-[data-theme="glass"] .sort-btn.active,
-[data-theme="glass"] .filter-chip.active,
 [data-theme="dark-glass"] .sort-btn.active,
 [data-theme="dark-glass"] .filter-chip.active,
 [data-theme="light-glass"] .sort-btn.active,
 [data-theme="light-glass"] .filter-chip.active {
   /*background: var(--accent);*/
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--accent);
+  /*border-color: var(--accent);*/
+}
+
+[data-theme="glass"] .sort-btn.active,
+[data-theme="glass"] .filter-chip.active,
+[data-theme="dark-glass"] .sort-btn.active,
+[data-theme="dark-glass"] .filter-chip.active {
+  /*background: var(--accent);*/
   background: rgba(255, 255, 255, 0.2);
+  color: var(--accent);
   /*border-color: var(--accent);*/
 }
 
@@ -573,6 +581,18 @@ button:active {
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
+}
+
+.offline-banner {
+  background: var(--accent-secondary, #e67e22);
+  color: #fff;
+  text-align: center;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  z-index: 1000;
 }
 
 .app-map {

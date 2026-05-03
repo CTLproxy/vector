@@ -67,4 +67,6 @@ export interface UserPrefs {
   visitedExpiryDays: number;
   /** Sync mode: 'manual' = on demand, 'live' = auto-sync on every change */
   syncMode: 'manual' | 'live';
+  /** When true, all network requests are suppressed — app runs fully offline */
+  offlineMode: boolean;
 }

@@ -1,6 +1,8 @@
 const PROXY_KEY = 'vector_cors_proxy';
 const DEFAULT_PROXY = 'https://api.codetabs.com/v1/proxy?quest=';
 
+import { isNetworkAvailable } from './network';
+
 export function getCorsProxy(): string {
   return localStorage.getItem(PROXY_KEY) || DEFAULT_PROXY;
 }
@@ -125,6 +127,10 @@ export async function fetchViaProxy(
   url: string,
   options?: { accept?: string },
 ): Promise<ProxyResult> {
+  if (!isNetworkAvailable()) {
+    throw new Error('No network connection. Disable offline mode or connect to the internet.');
+  }
+
   // Try own proxy first (only works when deployed on Vercel)
   try {
     return await fetchViaOwnProxy(url, options);

@@ -31,6 +31,9 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const setVisitedExpiryDays = useStore((s) => s.setVisitedExpiryDays);
   const syncMode = useStore((s) => s.syncMode);
   const setSyncMode = useStore((s) => s.setSyncMode);
+  const offlineMode = useStore((s) => s.offlineMode);
+  const setOfflineMode = useStore((s) => s.setOfflineMode);
+  const isOnline = useStore((s) => s.isOnline);
 
   // Non-linear radius: slider 0-100 maps to 0-50 km
   // 0-50 → 0-5 km (0.1 km precision), 50-75 → 5-10 km (0.5 km), 75-100 → 10-50 km
@@ -58,9 +61,26 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
   const [proxyUrl, setProxyUrl] = useState(getCorsProxy);
   const [swUpdate, setSwUpdate] = useState<ServiceWorker | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [serverReachable, setServerReachable] = useState<boolean | null>(null); // null = not checked yet
   const [cloudSyncId, setCloudSyncId] = useState(getSyncId() || '');
   const [syncKeyInput, setSyncKeyInput] = useState('');
   const [syncing, setSyncing] = useState(false);
+
+  // Check server reachability on mount and when online status changes
+  useEffect(() => {
+    if (offlineMode || !isOnline) {
+      setServerReachable(false);
+      return;
+    }
+    let cancelled = false;
+    const check = () => {
+      fetch('/', { method: 'HEAD', cache: 'no-store' })
+        .then((r) => { if (!cancelled) setServerReachable(r.ok); })
+        .catch(() => { if (!cancelled) setServerReachable(false); });
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [offlineMode, isOnline]);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
@@ -83,19 +103,39 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
     });
   }, []);
 
-  const handleForceUpdate = () => {
+  const handleForceUpdate = async () => {
     if (swUpdate) {
+      // A new SW version is waiting — activate it and reload
       setUpdating(true);
       swUpdate.postMessage({ type: 'SKIP_WAITING' });
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         window.location.reload();
       });
-    } else {
-      // No waiting SW — just clear caches and reload
+      return;
+    }
+
+    // Check if server is actually reachable right now
+    let canReachServer = false;
+    if (navigator.onLine && !offlineMode) {
+      try {
+        const resp = await fetch('/', { method: 'HEAD', cache: 'no-store' });
+        canReachServer = resp.ok;
+      } catch {
+        canReachServer = false;
+      }
+      setServerReachable(canReachServer);
+    }
+
+    if (canReachServer) {
+      // Server is up — safe to clear caches and reload fresh
       setUpdating(true);
       caches.keys().then((names) =>
         Promise.all(names.map((n) => caches.delete(n)))
       ).then(() => window.location.reload());
+    } else {
+      // Server unreachable — soft reload from cache
+      setUpdating(true);
+      window.location.reload();
     }
   };
 
@@ -270,6 +310,27 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
         </section>
 
         <section>
+          <h4>Offline Mode</h4>
+          <p className="settings-hint">
+            {offlineMode
+              ? '📴 Offline mode is active — all network requests are disabled. Your data is safely stored locally.'
+              : isOnline
+                ? '🌐 You are online. Enable offline mode to prevent any network usage.'
+                : '⚠️ No internet connection detected. Your data is safe — the app works fully offline.'}
+          </p>
+          <div className="settings-row">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={offlineMode}
+                onChange={(e) => setOfflineMode(e.target.checked)}
+              />
+              Force offline mode
+            </label>
+          </div>
+        </section>
+
+        <section>
           <h4>Cloud Sync</h4>
           {cloudSyncId ? (
             <>
@@ -280,8 +341,8 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
                 Last synced: {getLastSyncedAt() ? new Date(getLastSyncedAt()).toLocaleString() : 'Never'}
               </p>
               <div className="settings-row">
-                <button className="btn-primary" onClick={handleCloudSync} disabled={syncing}>
-                  {syncing ? 'Syncing…' : '↻ Sync Now'}
+                <button className="btn-primary" onClick={handleCloudSync} disabled={syncing || offlineMode || !isOnline}>
+                  {syncing ? 'Syncing…' : offlineMode ? '📴 Offline' : !isOnline ? '⚠️ No Connection' : '↻ Sync Now'}
                 </button>
                 <button className="btn-secondary" onClick={handleDisconnectSync}>
                   Disconnect
@@ -345,7 +406,13 @@ export default function SettingsPanel({ onClose, onOpenSavedLists }: Props) {
               onClick={handleForceUpdate}
               disabled={updating}
             >
-              {updating ? 'Updating…' : swUpdate ? 'Update Now' : 'Force Refresh'}
+              {updating
+                ? 'Updating…'
+                : swUpdate
+                  ? 'Update Now'
+                  : (!isOnline || offlineMode || serverReachable === false)
+                    ? '↻ Reload (Cached)'
+                    : 'Force Refresh'}
             </button>
           </div>
         </section>

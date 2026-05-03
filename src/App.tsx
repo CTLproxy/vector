@@ -24,6 +24,21 @@ const DECISION_COUNT = 5;
 export default function App() {
   useGeolocation();
   const theme = useStore((s) => s.theme);
+  const offlineMode = useStore((s) => s.offlineMode);
+  const isOnline = useStore((s) => s.isOnline);
+  const setIsOnline = useStore((s) => s.setIsOnline);
+
+  // Track browser online/offline status
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, [setIsOnline]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -58,6 +73,8 @@ export default function App() {
 
   useEffect(() => {
     const doSync = () => {
+      const { offlineMode, isOnline } = useStore.getState();
+      if (offlineMode || !isOnline) return;
       const syncId = getSyncId();
       if (!syncId) return;
       const places = useStore.getState().places;
@@ -153,6 +170,13 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* Offline indicator */}
+      {(offlineMode || !isOnline) && (
+        <div className="offline-banner">
+          {offlineMode ? '📴 Offline Mode' : '⚠️ No Connection'} — data is saved locally
+        </div>
+      )}
+
       {/* Map section */}
       <div className="app-map">
         <MapView />
